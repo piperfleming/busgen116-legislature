@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Legislature — Instructor</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0d1117;
+    color: #e6edf3;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    padding: 24px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #8b949e; margin-bottom: 24px; }
+
+  .card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8b949e;
+    margin-bottom: 14px;
+  }
+
+  /* Status */
+  #status-line { font-size: 16px; color: #e6edf3; margin-bottom: 8px; }
+  #progress-line { font-size: 14px; color: #8b949e; }
+  .phase-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .phase-waiting  { background: #21262d; color: #8b949e; }
+  .phase-whisper  { background: #2d2a1e; color: #e3b341; border: 1px solid #e3b341; }
+  .phase-voting   { background: #1f2d45; color: #58a6ff; border: 1px solid #58a6ff; }
+  .phase-results  { background: #1e2d23; color: #3fb950; border: 1px solid #3fb950; }
+  .phase-done     { background: #21262d; color: #8b949e; }
+
+  /* Controls */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  button {
+    padding: 10px 18px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  button:hover { opacity: 0.85; }
+  button:disabled { opacity: 0.35; cursor: default; }
+
+  .btn-amber  { background: #e3b341; color: #0d1117; }
+  .btn-blue   { background: #1f6feb; color: #fff; }
+  .btn-green  { background: #238636; color: #fff; }
+  .btn-gray   { background: #21262d; color: #e6edf3; border: 1px solid #30363d; }
+  .btn-red    { background: #da3633; color: #fff; }
+
+  /* Password */
+  #pw-section { margin-bottom: 20px; }
+  #pw-section label { font-size: 13px; color: #8b949e; display: block; margin-bottom: 6px; }
+  #pw-input {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    color: #e6edf3;
+    font-size: 14px;
+    padding: 8px 12px;
+    width: 200px;
+  }
+  #pw-input:focus { outline: none; border-color: #58a6ff; }
+
+  /* Submission tracker */
+  #sub-bar-wrap {
+    background: #21262d;
+    border-radius: 4px;
+    height: 8px;
+    margin-top: 10px;
+    overflow: hidden;
+  }
+  #sub-bar { height: 100%; background: #58a6ff; transition: width 0.4s ease; width: 0%; }
+
+  /* Log */
+  #log {
+    max-height: 180px;
+    overflow-y: auto;
+    font-size: 12px;
+    color: #8b949e;
+    font-family: monospace;
+  }
+  .log-entry { padding: 2px 0; border-bottom: 1px solid #21262d; }
+  .log-ok   { color: #3fb950; }
+  .log-err  { color: #f85149; }
+</style>
+</head>
+<body>
+
+<h1>Legislature — Instructor Controls</h1>
+<p class="subtitle">Keep this tab open. Use the buttons below to advance the session.</p>
+
+<div id="pw-section">
+  <label for="pw-input">Password:</label>
+  <input type="password" id="pw-input" value="busgen2026" />
+</div>
+
+<div class="card">
+  <div class="card-title">Current State</div>
+  <div id="status-line">Loading...</div>
+  <div id="progress-line"></div>
+  <div id="sub-bar-wrap"><div id="sub-bar"></div></div>
+</div>
+
+<div class="card">
+  <div class="card-title">Session Controls</div>
+
+  <div class="btn-row">
+    <button class="btn-amber" onclick="act('start_whisper')">1. Open Whisper Window</button>
+    <button class="btn-blue"  onclick="act('start_voting')">2. Start Voting</button>
+    <button class="btn-green" onclick="act('show_results')">3. Show Results</button>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn-gray" onclick="act('next_turn')">Next Turn →</button>
+    <button class="btn-gray" onclick="act('next_proposal')">Next Proposal →→</button>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn-red" onclick="confirmReset()">Reset Session</button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Action Log</div>
+  <div id="log"></div>
+</div>
+
+<script>
+const POLL = 2000;
+let lastState = null;
+
+const phaseLabels = {
+  waiting: 'Waiting',
+  whisper: 'Whisper Open',
+  voting: 'Voting',
+  results: 'Results',
+  done: 'Session Complete',
+};
+
+function pw() {
+  return document.getElementById('pw-input').value;
+}
+
+function log(msg, type = '') {
+  const div = document.createElement('div');
+  div.className = `log-entry${type ? ' log-' + type : ''}`;
+  div.textContent = `${new Date().toLocaleTimeString()}  ${msg}`;
+  const logEl = document.getElementById('log');
+  logEl.prepend(div);
+}
+
+async function act(action) {
+  try {
+    const r = await fetch('/advance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw(), action }),
+    });
+    const d = await r.json();
+    if (d.error) {
+      log(`ERROR: ${d.error}`, 'err');
+    } else {
+      log(`${action} → phase=${d.phase}, turn=${d.turn}, proposal=${d.proposal_idx + 1}`, 'ok');
+    }
+  } catch (e) {
+    log(`Request failed: ${e}`, 'err');
+  }
+}
+
+async function confirmReset() {
+  if (!confirm('Reset the session? This clears all votes and deals (keeps registrations).')) return;
+  await act('reset');
+}
+
+async function poll() {
+  try {
+    const r = await fetch('/state');
+    const s = await r.json();
+
+    const phase = s.phase;
+    const proposal = s.proposal;
+    const turn = s.turn;
+    const submitted = s.submitted_count;
+    const total = s.total_registered;
+
+    let statusHtml = `<span class="phase-badge phase-${phase}">${phaseLabels[phase] || phase}</span>`;
+    if (proposal) {
+      statusHtml += `  <span style="margin-left:10px; font-size:15px;">Proposal ${s.proposal_idx + 1}/3: <strong>${proposal.company}</strong> — ${proposal.title}</span>`;
+    }
+    document.getElementById('status-line').innerHTML = statusHtml;
+
+    document.getElementById('progress-line').textContent =
+      `Turn ${turn}/${s.max_turns}  ·  ${submitted} / ${total} submitted this turn  ·  ${total} registered`;
+
+    const pct = total > 0 ? (submitted / total) * 100 : 0;
+    document.getElementById('sub-bar').style.width = `${pct}%`;
+
+  } catch (e) {
+    console.error(e);
+  }
+  setTimeout(poll, POLL);
+}
+
+poll();
+</script>
+</body>
+</html>

@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Legislature</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #f4f1eb;
+    color: #1a1a2e;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr;
+    overflow: hidden;
+  }
+
+  /* ══════════════════════════════════════════
+     LEFT COLUMN
+  ══════════════════════════════════════════ */
+  #left-col {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #ddd8cc;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  /* ── Thin top bar ── */
+  #top-header {
+    background: #1a1a2e;
+    color: #f4f1eb;
+    padding: 7px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  #hdr-title {
+    font-size: 11px; font-weight: bold; letter-spacing: 0.14em;
+    text-transform: uppercase; opacity: 0.8; white-space: nowrap;
+  }
+  #hdr-right { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  #hdr-turn  { font-size: 11px; opacity: 0.55; font-family: 'Segoe UI', system-ui, sans-serif; white-space: nowrap; }
+
+  .phase-pill {
+    padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: bold;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    font-family: 'Segoe UI', system-ui, sans-serif; white-space: nowrap;
+  }
+  .pill-waiting { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.5); }
+  .pill-whisper { background: #f59e0b; color: #1a1a2e; }
+  .pill-voting  { background: #3b82f6; color: #fff; }
+  .pill-results { background: #10b981; color: #fff; }
+  .pill-done    { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.5); }
+
+  /* ── Question + spotlight panel ── */
+  #question-panel {
+    flex: 1;
+    background: #fff;
+    border-bottom: 1px solid #ddd8cc;
+    display: flex;
+    flex-direction: column;
+    padding: 18px 22px 14px;
+    gap: 10px;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  #proposal-label {
+    font-size: 10px; font-weight: bold; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #9ca3af;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    flex-shrink: 0;
+  }
+
+  #question-text {
+    font-style: italic; color: #1a1a2e; line-height: 1.5;
+    flex-shrink: 0;
+    font-size: clamp(13px, 1.5vw, 20px);
+    transition: font-size 0.3s ease;
+  }
+  #question-panel.spotlight-mode #question-text {
+    color: #6b7280;
+  }
+  #question-panel.empty #proposal-label { display: none; }
+  #question-panel.empty #question-text  { color: #d1d5db; font-size: 16px; }
+
+  /* ── Spotlight ── */
+  #spotlight {
+    flex: 1;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+    min-height: 0;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 14px;
+  }
+  #question-panel.spotlight-mode #spotlight { display: flex; }
+
+  #sp-meta {
+    display: flex; align-items: center; gap: 8px;
+  }
+  #sp-name {
+    font-size: 15px; font-weight: bold; color: #1a1a2e;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+  .sp-badge {
+    padding: 3px 8px; border-radius: 4px; font-size: 11px;
+    font-weight: bold; font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+  .b-yes { background: #d1fae5; color: #065f46; }
+  .b-no  { background: #fee2e2; color: #991b1b; }
+
+  #sp-stmt {
+    font-size: clamp(14px, 1.4vw, 20px);
+    font-style: italic; color: #374151; line-height: 1.55;
+    display: -webkit-box; -webkit-line-clamp: 5;
+    -webkit-box-orient: vertical; overflow: hidden;
+  }
+
+  #sp-progress {
+    height: 2px; background: #e5e7eb; border-radius: 1px; overflow: hidden; flex-shrink: 0;
+  }
+  #sp-progress-fill {
+    height: 100%; background: #3b82f6; width: 100%;
+  }
+  @keyframes drain {
+    from { width: 100%; }
+    to   { width: 0%; }
+  }
+  .sp-draining {
+    animation: drain 10s linear forwards;
+  }
+
+  /* ── Tally bar ── */
+  #tally-bar {
+    background: #faf8f3; border-bottom: 1px solid #ddd8cc;
+    padding: 10px 16px; display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+  }
+  .tal-num { font-size: 38px; font-weight: bold; line-height: 1; font-family: 'Segoe UI', system-ui, sans-serif; }
+  .tal-yes { color: #059669; }
+  .tal-no  { color: #dc2626; }
+  .tal-lbl { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: #9ca3af; font-family: 'Segoe UI', system-ui, sans-serif; margin-top: 2px; }
+  #tally-track { flex: 1; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; }
+  #tally-fill  { height: 100%; background: #059669; transition: width 0.6s ease; width: 50%; }
+  #tally-sub   { font-size: 11px; color: #d1d5db; font-family: 'Segoe UI', system-ui, sans-serif; white-space: nowrap; }
+
+  /* ── Chamber ── */
+  #chamber-panel {
+    flex: 0 0 38vh;
+    display: flex; align-items: center; justify-content: center;
+    background: #faf8f3; overflow: hidden;
+  }
+  #chamber-svg { width: 100%; height: 100%; display: block; }
+
+  /* ══════════════════════════════════════════
+     RIGHT COLUMN — deal threads
+  ══════════════════════════════════════════ */
+  #deals-panel {
+    display: flex; flex-direction: column;
+    overflow: hidden; height: 100vh; background: #f4f1eb;
+  }
+
+  #deals-header {
+    padding: 8px 16px;
+    font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: #9ca3af; border-bottom: 1px solid #e5e7eb; flex-shrink: 0;
+    font-family: 'Segoe UI', system-ui, sans-serif; background: #fff;
+  }
+
+  #deals-threads {
+    flex: 1; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 1px; background: #e5e7eb;
+  }
+
+  .thread-card {
+    background: #fff;
+    padding: 11px 14px;
+    border-left: 3px solid #f59e0b;
+  }
+
+  .thread-pair-header {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 9px;
+  }
+
+  .pair-avatars {
+    position: relative; width: 40px; height: 24px; flex-shrink: 0;
+  }
+  .pair-avatar {
+    width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; font-weight: bold; font-family: 'Segoe UI', system-ui, sans-serif;
+    border: 2px solid #fff; position: absolute;
+  }
+  .pair-avatar:first-child { left: 0; z-index: 2; }
+  .pair-avatar:last-child  { left: 16px; z-index: 1; }
+  .av-yes { background: #d1fae5; color: #065f46; }
+  .av-no  { background: #fee2e2; color: #991b1b; }
+  .av-pending { background: #f3f4f6; color: #9ca3af; }
+
+  .pair-names {
+    font-size: 11px; font-weight: bold; color: #374151;
+    font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.3;
+    display: flex; flex-direction: column; gap: 1px;
+  }
+  .pair-names .pair-sep { color: #fbbf24; font-size: 9px; }
+
+  .thread-msg {
+    margin-top: 5px;
+    background: #fffbeb;
+    border-radius: 6px;
+    padding: 5px 8px;
+    border-left: 2px solid #fcd34d;
+  }
+  .msg-header {
+    display: flex; align-items: center; gap: 6px; margin-bottom: 2px;
+  }
+  .msg-turn { font-size: 9px; color: #d97706; font-family: 'Segoe UI', system-ui, sans-serif; font-weight: bold; }
+  .msg-from { font-size: 10px; font-weight: bold; color: #374151; font-family: 'Segoe UI', system-ui, sans-serif; }
+  .msg-arrow { font-size: 9px; color: #9ca3af; }
+  .msg-to   { font-size: 10px; color: #6b7280; font-family: 'Segoe UI', system-ui, sans-serif; }
+  .msg-terms {
+    font-size: 11px; color: #4b5563; font-style: italic; line-height: 1.4;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+
+  .no-deals-msg {
+    color: #9ca3af; font-size: 13px; font-style: italic;
+    padding: 24px 16px; font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+
+  /* ══════════════════════════════════════════
+     WAITING OVERLAY
+  ══════════════════════════════════════════ */
+  #waiting-overlay {
+    display: none; position: fixed; inset: 0; background: #faf8f3;
+    align-items: center; justify-content: center; flex-direction: column; gap: 10px; z-index: 20;
+  }
+  #waiting-overlay.show { display: flex; }
+  #waiting-overlay h2   { font-size: 26px; letter-spacing: 0.1em; text-transform: uppercase; color: #1a1a2e; }
+  #waiting-overlay .big { font-size: 80px; font-weight: bold; color: #1a1a2e; font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1; }
+  #waiting-overlay p    { color: #9ca3af; font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div id="waiting-overlay" class="show">
+  <h2>Agentic Legislature</h2>
+  <div class="big" id="waiting-count">0</div>
+  <p>legislators connected</p>
+</div>
+
+<!-- Left: info + spotlight + chamber -->
+<div id="left-col">
+  <div id="top-header">
+    <span id="hdr-title">Agentic Legislature</span>
+    <div id="hdr-right">
+      <span id="hdr-turn"></span>
+      <span id="phase-pill" class="phase-pill pill-waiting">Waiting</span>
+    </div>
+  </div>
+
+  <div id="question-panel" class="empty">
+    <div id="proposal-label"></div>
+    <div id="question-text">Waiting for session to begin.</div>
+    <div id="spotlight">
+      <div id="sp-meta">
+        <span id="sp-name"></span>
+        <span id="sp-badge" class="sp-badge b-yes">YES</span>
+      </div>
+      <div id="sp-stmt"></div>
+      <div id="sp-progress"><div id="sp-progress-fill"></div></div>
+    </div>
+  </div>
+
+  <div id="tally-bar">
+    <div>
+      <div class="tal-num tal-yes" id="yes-num">—</div>
+      <div class="tal-lbl">Yes</div>
+    </div>
+    <div id="tally-track"><div id="tally-fill"></div></div>
+    <div>
+      <div class="tal-num tal-no" id="no-num">—</div>
+      <div class="tal-lbl">No</div>
+    </div>
+    <div id="tally-sub"></div>
+  </div>
+
+  <div id="chamber-panel">
+    <svg id="chamber-svg" viewBox="0 0 500 290"
+         xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax meet">
+      <rect x="215" y="260" width="70" height="16" rx="3" fill="#1a1a2e" opacity="0.1"/>
+      <text x="250" y="272" text-anchor="middle" font-size="7.5" fill="#9ca3af"
+            font-family="'Segoe UI', sans-serif" letter-spacing="0.1em">PODIUM</text>
+      <g id="deal-arcs"></g>
+      <g id="seats"></g>
+    </svg>
+  </div>
+</div>
+
+<!-- Right: deal threads -->
+<div id="deals-panel">
+  <div id="deals-header">Deals &amp; Coalitions</div>
+  <div id="deals-threads"><div class="no-deals-msg">No deals offered yet.</div></div>
+</div>
+
+<script>
+const POLL               = 2500;
+const SPOTLIGHT_DURATION = 10000; // ms per statement
+const MAX_THREADS        = 5;
+const SVG_CX  = 250, SVG_CY = 268;
+const RADII   = [208, 162, 118];
+const DOT_R   = 18;
+const A_START = Math.PI * 0.96;
+const A_END   = Math.PI * 0.04;
+
+const phasePills = {
+  waiting: ['Waiting',          'pill-waiting'],
+  whisper: ['Whisper Open',     'pill-whisper'],
+  voting:  ['Voting',           'pill-voting'],
+  results: ['Results',          'pill-results'],
+  done:    ['Session Complete', 'pill-done'],
+};
+
+// ── Seat animation ───────────────────────────────────────────────
+let _animKey = null, _animTimer = null, _animRevealed = {};
+
+function updateSeats(legislators, votes, proposalIdx, turn, phase) {
+  const key = `${proposalIdx}-${turn}`;
+  if (phase !== 'results') {
+    if (_animTimer) { clearTimeout(_animTimer); _animTimer = null; }
+    _animKey = null;
+    buildSeats(legislators, votes);
+    return;
+  }
+  if (_animKey === key) return;
+  if (_animTimer) { clearTimeout(_animTimer); _animTimer = null; }
+  _animKey = key; _animRevealed = {};
+  const teams = Object.keys(votes).filter(t => votes[t]).sort(() => Math.random() - 0.5);
+  buildSeats(legislators, {});
+  let i = 0;
+  const delay = Math.min(1800 / Math.max(teams.length, 1), 90);
+  function step() {
+    if (i >= teams.length) { _animTimer = null; return; }
+    _animRevealed[teams[i]] = votes[teams[i]]; i++;
+    buildSeats(legislators, _animRevealed);
+    _animTimer = setTimeout(step, delay);
+  }
+  _animTimer = setTimeout(step, 200);
+}
+
+// ── Spotlight ────────────────────────────────────────────────────
+let _spTurnKey = null, _spOrder = [], _spIdx = 0;
+let _spTeam = null, _spExpires = 0, _spStarted = 0;
+
+function initSpotlight(legislators, proposalIdx, turn) {
+  const key = `${proposalIdx}-${turn}`;
+  if (_spTurnKey === key) return;
+  _spTurnKey = key;
+  _spOrder   = Object.keys(legislators).sort(() => Math.random() - 0.5);
+  _spIdx     = 0;
+  _spTeam    = null;
+  _spExpires = 0;
+}
+
+function stepSpotlight(votes, stmts) {
+  if (_spTeam && Date.now() < _spExpires) return; // still showing
+
+  // Advance through shuffled order, looping back to start when exhausted
+  const n = _spOrder.length;
+  if (!n) return;
+  for (let checked = 0; checked < n; checked++) {
+    const t = _spOrder[_spIdx % n];
+    _spIdx++;
+    if (votes[t] && stmts[t]) {
+      const changed = t !== _spTeam;
+      _spTeam    = t;
+      _spStarted = Date.now();
+      _spExpires = _spStarted + SPOTLIGHT_DURATION;
+      if (changed) {
+        // Restart CSS drain animation
+        const fill = document.getElementById('sp-progress-fill');
+        fill.classList.remove('sp-draining');
+        void fill.offsetWidth; // force reflow
+        fill.classList.add('sp-draining');
+      }
+      return;
+    }
+  }
+  // Nobody has voted yet — nothing to show
+}
+
+function renderSpotlight(legislators, votes, stmts, phase) {
+  const panel = document.getElementById('question-panel');
+  const spEl  = document.getElementById('spotlight');
+
+  if (phase !== 'voting' && phase !== 'results') {
+    panel.classList.remove('spotlight-mode');
+    return;
+  }
+
+  stepSpotlight(votes, stmts);
+
+  if (!_spTeam) {
+    panel.classList.remove('spotlight-mode');
+    return;
+  }
+
+  panel.classList.add('spotlight-mode');
+
+  const display = legislators[_spTeam] || _spTeam;
+  const vote    = votes[_spTeam];
+  const stmt    = stmts[_spTeam] || '';
+
+  document.getElementById('sp-name').textContent = shortName(display);
+  const badge = document.getElementById('sp-badge');
+  badge.textContent = vote;
+  badge.className   = `sp-badge ${vote === 'YES' ? 'b-yes' : 'b-no'}`;
+  document.getElementById('sp-stmt').textContent = `"${stmt}"`;
+}
+
+// ── SVG + seat positions ─────────────────────────────────────────
+let _seatPositions = {}; // team → {x, y}
+function initials(display) {
+  const name  = display.replace(/^Rep\s+/i, '').replace(/\s*\(.*\)$/, '').trim();
+  const parts = name.split(/\s+/);
+  return parts.length >= 2
+    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    : name.slice(0, 2).toUpperCase();
+}
+
+function shortName(display) {
+  const name  = display.replace(/^Rep\s+/i, '').replace(/\s*\(.*\)$/, '').trim();
+  const parts = name.split(/\s+/);
+  return parts.length >= 2 ? parts[0] + ' ' + parts[parts.length - 1][0] + '.' : name;
+}
+
+function rowSizes(n) {
+  if (n <= 9)  return [n];
+  if (n <= 18) { const a = Math.ceil(n * 0.56); return [a, n - a]; }
+  const a = Math.round(n * 0.43), b = Math.round(n * 0.35);
+  return [a, b, n - a - b];
+}
+
+function seatPos(i, rowN, radius) {
+  const t = rowN > 1 ? i / (rowN - 1) : 0.5;
+  const angle = A_START - t * (A_START - A_END);
+  return { x: SVG_CX + radius * Math.cos(angle), y: SVG_CY - radius * Math.sin(angle) };
+}
+
+function buildSeats(legislators, votes) {
+  const g = document.getElementById('seats');
+  g.innerHTML = '';
+  _seatPositions = {};
+  const entries = Object.entries(legislators);
+  if (!entries.length) return;
+  entries.sort((a, b) => shortName(a[1]).localeCompare(shortName(b[1])));
+  const sizes = rowSizes(entries.length);
+  const ns = 'http://www.w3.org/2000/svg';
+  let idx = 0;
+  sizes.forEach((rowN, rowI) => {
+    const radius = RADII[rowI] ?? RADII[RADII.length - 1];
+    for (let i = 0; i < rowN && idx < entries.length; i++, idx++) {
+      const [team, display] = entries[idx];
+      const v      = votes[team];
+      const fill   = v === 'YES' ? '#d1fae5' : v === 'NO' ? '#fee2e2' : '#f3f4f6';
+      const stroke = v === 'YES' ? '#059669' : v === 'NO' ? '#dc2626' : '#d1d5db';
+      const tFill  = v === 'YES' ? '#065f46' : v === 'NO' ? '#991b1b' : '#9ca3af';
+      const pos    = seatPos(i, rowN, radius);
+      const circ   = document.createElementNS(ns, 'circle');
+      circ.setAttribute('cx', pos.x); circ.setAttribute('cy', pos.y);
+      circ.setAttribute('r', DOT_R); circ.setAttribute('fill', fill);
+      circ.setAttribute('stroke', stroke); circ.setAttribute('stroke-width', v ? '2.5' : '1.5');
+      const ttl = document.createElementNS(ns, 'title');
+      ttl.textContent = `${display}: ${v || 'pending'}`;
+      circ.appendChild(ttl);
+      const txt = document.createElementNS(ns, 'text');
+      txt.setAttribute('x', pos.x); txt.setAttribute('y', pos.y + 4);
+      txt.setAttribute('text-anchor', 'middle'); txt.setAttribute('font-size', '9');
+      txt.setAttribute('font-weight', 'bold');
+      txt.setAttribute('font-family', "'Segoe UI', system-ui, sans-serif");
+      txt.setAttribute('fill', tFill);
+      txt.textContent = initials(display);
+      g.appendChild(circ); g.appendChild(txt);
+      _seatPositions[team] = pos;
+    }
+  });
+}
+
+// ── Deal arcs in SVG ─────────────────────────────────────────────
+function buildDealArcs(allTurns) {
+  const g = document.getElementById('deal-arcs');
+  g.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+
+  // Count deals per pair
+  const pairs = new Map();
+  allTurns.forEach(td => {
+    for (const d of (td.deals || [])) {
+      const key = [d.from_team, d.to_team].sort().join('|');
+      if (!pairs.has(key)) pairs.set(key, { from: d.from_team, to: d.to_team, count: 0 });
+      pairs.get(key).count++;
+    }
+  });
+
+  for (const pair of pairs.values()) {
+    const posA = _seatPositions[pair.from];
+    const posB = _seatPositions[pair.to];
+    if (!posA || !posB) continue;
+
+    const line = document.createElementNS(ns, 'line');
+    line.setAttribute('x1', posA.x); line.setAttribute('y1', posA.y);
+    line.setAttribute('x2', posB.x); line.setAttribute('y2', posB.y);
+    line.setAttribute('stroke', '#f59e0b');
+    line.setAttribute('stroke-width', Math.min(1 + pair.count * 0.6, 3.5));
+    line.setAttribute('opacity', '0.38');
+    line.setAttribute('stroke-linecap', 'round');
+    g.appendChild(line);
+  }
+}
+
+// ── Deal threads ─────────────────────────────────────────────────
+function buildDealThreads(allTurns, votes) {
+  const container = document.getElementById('deals-threads');
+  const allDeals  = [];
+  allTurns.forEach((td, i) => {
+    for (const d of (td.deals || [])) allDeals.push({ ...d, turn: i + 1 });
+  });
+  if (!allDeals.length) {
+    container.innerHTML = '<div class="no-deals-msg">No deals offered yet.</div>';
+    return;
+  }
+
+  const threads = new Map();
+  for (const d of allDeals) {
+    const key = [d.from_team, d.to_team].sort().join('|');
+    if (!threads.has(key)) threads.set(key, { teamA: d.from_team, teamB: d.to_team, dispA: d.from_display, dispB: d.to_display, msgs: [] });
+    threads.get(key).msgs.push(d);
+  }
+  const sorted = [...threads.values()].sort((x, y) => {
+    const xBack = new Set(x.msgs.map(m => m.from_team)).size > 1 ? 1 : 0;
+    const yBack = new Set(y.msgs.map(m => m.from_team)).size > 1 ? 1 : 0;
+    return yBack !== xBack ? yBack - xBack : y.msgs.length - x.msgs.length;
+  }).slice(0, MAX_THREADS);
+
+  container.innerHTML = '';
+  for (const thread of sorted) {
+    const vA = votes[thread.teamA];
+    const vB = votes[thread.teamB];
+    const clA = vA === 'YES' ? 'av-yes' : vA === 'NO' ? 'av-no' : 'av-pending';
+    const clB = vB === 'YES' ? 'av-yes' : vB === 'NO' ? 'av-no' : 'av-pending';
+
+    const card = document.createElement('div');
+    card.className = 'thread-card';
+    card.innerHTML = `
+      <div class="thread-pair-header">
+        <div class="pair-avatars">
+          <div class="pair-avatar ${clA}">${initials(thread.dispA)}</div>
+          <div class="pair-avatar ${clB}">${initials(thread.dispB)}</div>
+        </div>
+        <div class="pair-names">
+          <span>${esc(shortName(thread.dispA))}</span>
+          <span class="pair-sep">↔ ${esc(shortName(thread.dispB))}</span>
+        </div>
+      </div>
+      ${thread.msgs.map(d => `
+        <div class="thread-msg">
+          <div class="msg-header">
+            <span class="msg-turn">T${d.turn}</span>
+            <span class="msg-from">${esc(shortName(d.from_display))}</span>
+            <span class="msg-arrow">→</span>
+            <span class="msg-to">${esc(shortName(d.to_display))}</span>
+          </div>
+          <div class="msg-terms">"${esc(d.terms)}"</div>
+        </div>`).join('')}`;
+    container.appendChild(card);
+  }
+}
+
+// ── Poll ─────────────────────────────────────────────────────────
+async function poll() {
+  try {
+    const r = await fetch('/state');
+    const s = await r.json();
+    const { phase, proposal, turn, legislators = {}, history = {} } = s;
+
+    document.getElementById('waiting-overlay').classList.toggle('show', phase === 'waiting');
+    document.getElementById('waiting-count').textContent = s.total_registered;
+
+    const pill = document.getElementById('phase-pill');
+    const [lbl, cls] = phasePills[phase] || ['—', 'pill-waiting'];
+    pill.textContent = lbl; pill.className = `phase-pill ${cls}`;
+
+    const qPanel = document.getElementById('question-panel');
+    if (proposal) {
+      document.getElementById('hdr-turn').textContent = `P${s.proposal_idx + 1}/3  ·  T${turn}/${s.max_turns}`;
+      document.getElementById('proposal-label').textContent = `${proposal.company} — ${proposal.title}`;
+      document.getElementById('question-text').textContent  = `"${proposal.question}"`;
+      qPanel.classList.remove('empty');
+    } else {
+      document.getElementById('hdr-turn').textContent = '';
+      qPanel.classList.add('empty');
+    }
+
+    const pid      = proposal?.id;
+    const allTurns = pid ? (history[pid] || []) : [];
+    const turnData = allTurns[turn - 1] || { votes: {}, statements: {}, deals: [] };
+    const votes    = turnData.votes      || {};
+    const stmts    = turnData.statements || {};
+
+    let yes = 0, no = 0;
+    for (const v of Object.values(votes)) { if (v==='YES') yes++; else if (v==='NO') no++; }
+    document.getElementById('yes-num').textContent = yes || '—';
+    document.getElementById('no-num').textContent  = no  || '—';
+    const tot = yes + no;
+    document.getElementById('tally-fill').style.width = tot > 0 ? `${yes/tot*100}%` : '50%';
+    document.getElementById('tally-sub').textContent  = `${s.submitted_count} / ${s.total_registered} submitted`;
+
+    updateSeats(legislators, votes, s.proposal_idx, turn, phase);
+    buildDealArcs(allTurns);
+    initSpotlight(legislators, s.proposal_idx, turn);
+    renderSpotlight(legislators, votes, stmts, phase);
+    buildDealThreads(allTurns, votes);
+
+  } catch(e) { console.error(e); }
+  setTimeout(poll, POLL);
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+poll();
+</script>
+</body>
+</html>
