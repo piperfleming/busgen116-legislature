@@ -69,6 +69,7 @@ TURN {turn} of {max_turns}{final_note}
 
 {history_section}
 {deals_section}
+{active_deals_section}
 Your token balance: {token_balance} tokens
 Your fellow legislators:
 {legislators_list}
@@ -77,9 +78,11 @@ Instructions:
 - Vote YES or NO based on your voter's preferences and any coalition commitments you have accepted
 - Give a short, sharp public statement (1-2 sentences) visible to the whole chamber
 - If you received deal offers (shown above), explicitly ACCEPT or REJECT each one by name
-- Only offer a new deal if you genuinely need another legislator's vote to achieve your goal
+- You may offer deals freely — but check "DEALS ALREADY IN PLAY" first:
+    * If a deal already targets the same legislator with the same direction (YES/NO), do NOT duplicate it
+    * Instead, if you want to reinforce it, offer tokens to the same target with the same direction
+    * If you disagree with the direction, you may offer a counter-deal to the same target
 - Deals may ONLY involve the CURRENT proposal — never offer deals on already-decided proposals
-- Many turns you will NOT need to offer a deal — only do so when strategically necessary
 - On the final turn, cast your binding vote — no new deals, no new responses needed
 
 Respond in EXACTLY this format (no other text):
@@ -134,10 +137,32 @@ def format_deals_for_me(all_turns, my_team):
     for td in all_turns:
         for deal in td.get("deals", []):
             if deal["to_team"] == my_team:
-                pending.append(f'  FROM {deal["from_display"]}: "{deal["terms"]}"')
+                resp = deal.get("response")
+                status = f" [{resp.upper()}]" if resp else " [PENDING]"
+                pending.append(f'  FROM {deal["from_display"]}: "{deal["terms"]}"{status}')
     if not pending:
         return ""
     return "DEAL OFFERS TO YOU:\n" + "\n".join(pending)
+
+
+def format_active_deals(all_turns, my_team):
+    """Deals from previous turns that are still unanswered — agents should not duplicate these."""
+    active = []
+    for td in all_turns:
+        for deal in td.get("deals", []):
+            if deal.get("response") is not None:
+                continue  # already resolved
+            if deal.get("from_team") == my_team or deal.get("to_team") == my_team:
+                continue  # skip deals involving me (shown elsewhere)
+            active.append(
+                f'  {deal["from_display"]} → {deal["to_display"]}: "{deal["terms"]}"'
+            )
+    if not active:
+        return ""
+    return (
+        "DEALS ALREADY IN PLAY (do not duplicate — reinforce with tokens instead):\n"
+        + "\n".join(active)
+    )
 
 
 def negotiate(team_name, display_name, gt, state):
@@ -152,9 +177,10 @@ def negotiate(team_name, display_name, gt, state):
     legislators = state.get("legislators", {})
     history     = state["history"].get(p["id"], [])
 
-    history_section  = format_history(history, team_name, legislators)
-    deals_section    = format_deals_for_me(history, team_name)
-    final_note       = " — FINAL VOTE. No new deals." if turn == max_turns else ""
+    history_section       = format_history(history, team_name, legislators)
+    deals_section         = format_deals_for_me(history, team_name)
+    active_deals_section  = format_active_deals(history, team_name)
+    final_note            = " — FINAL VOTE. No new deals." if turn == max_turns else ""
     other_legs = [(k, v) for k, v in legislators.items() if k != team_name]
     random.shuffle(other_legs)
     legislators_list = "\n".join(f"  - {v}" for k, v in other_legs)
@@ -183,10 +209,11 @@ def negotiate(team_name, display_name, gt, state):
         turn              = turn,
         max_turns         = max_turns,
         final_note        = final_note,
-        history_section   = history_section,
-        deals_section     = deals_section,
-        token_balance     = token_balance,
-        legislators_list  = legislators_list,
+        history_section       = history_section,
+        deals_section         = deals_section,
+        active_deals_section  = active_deals_section,
+        token_balance         = token_balance,
+        legislators_list      = legislators_list,
     )
 
     completion = client.chat.completions.create(
@@ -241,10 +268,6 @@ def negotiate(team_name, display_name, gt, state):
 
     if deal:
         deal["token_amount"] = max(0, min(raw_tokens, token_balance))
-
-    # Randomly skip ~20% of deals (lower for testing; raise to 0.60 for full class run)
-    if deal and random.random() < 0.20:
-        deal = None
 
     return {"vote": vote_val, "statement": statement, "deal": deal, "deal_responses": deal_responses}
 
