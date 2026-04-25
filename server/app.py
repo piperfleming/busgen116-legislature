@@ -1,6 +1,6 @@
 import os
 import json
-import logging
+import logging  # noqa: F401 — force redeploy
 import sys
 import time
 import threading
