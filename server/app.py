@@ -82,12 +82,15 @@ MAX_TURNS        = 4
 MAX_DEALS_PER_TURN = 6
 
 
+STARTING_TOKENS = 100
+
 def fresh_state():
     return {
         "phase": "waiting",
         "proposal_idx": 0,
         "turn": 1,
         "registered": {},
+        "token_balances": {},
         "history": {},
         "current_submissions": [],
     }
@@ -129,6 +132,7 @@ def public_state():
         "history": state["history"],
         "submitted_count": len(state.get("current_submissions", [])),
         "total_registered": len(state["registered"]),
+        "token_balances": state.get("token_balances", {}),
     }
 
 
@@ -189,6 +193,8 @@ def register():
     if not team or not display:
         return jsonify({"error": "team_name and display_name required"}), 400
     state["registered"][team] = display
+    state.setdefault("token_balances", {})[team] = \
+        state["token_balances"].get(team, STARTING_TOKENS)
     save_state(state)
     logger.info("Registered: %s (%s)", team, display)
     return jsonify({"ok": True, "count": len(state["registered"])})
@@ -234,14 +240,39 @@ def submit():
 
     if deal and deal.get("to_display") and deal.get("terms") and \
             len(turn_data.get("deals", [])) < MAX_DEALS_PER_TURN:
+        balances = state.setdefault("token_balances", {})
+        raw_tokens = int(deal.get("token_amount", 0) or 0)
+        token_amount = max(0, min(raw_tokens, balances.get(team, 0)))
         turn_data["deals"].append({
             "from_team": team,
             "from_display": state["registered"].get(team, team),
             "to_team": deal.get("to_team", "").strip().lower(),
             "to_display": deal.get("to_display", "").strip(),
             "terms": deal.get("terms", "").strip(),
+            "token_amount": token_amount,
             "timestamp": datetime.utcnow().isoformat(),
+            "response": None,
         })
+
+    # Record explicit accept/reject responses to deals from previous turns
+    for resp in (data.get("deal_responses") or []):
+        from_disp = (resp.get("from_display") or "").strip().lower()
+        resp_val  = (resp.get("response") or "").strip().lower()
+        if resp_val not in ("accepted", "rejected"):
+            continue
+        for prev_td in turns[:turn_idx]:
+            for d in prev_td.get("deals", []):
+                if (d.get("to_team") == team and
+                        d.get("from_display", "").strip().lower() == from_disp and
+                        d.get("response") is None):
+                    d["response"] = resp_val
+                    d["responded_turn"] = state["turn"]
+                    # Transfer tokens on acceptance
+                    if resp_val == "accepted" and d.get("token_amount", 0) > 0:
+                        balances = state.setdefault("token_balances", {})
+                        amount = d["token_amount"]
+                        balances[d["from_team"]] = max(0, balances.get(d["from_team"], 0) - amount)
+                        balances[team] = balances.get(team, 0) + amount
 
     subs = state.setdefault("current_submissions", [])
     if team not in subs:
@@ -309,6 +340,10 @@ def advance():
         state.clear()
         state.update(fresh_state())
         state["registered"] = registered
+
+    elif action == "hard_reset":
+        state.clear()
+        state.update(fresh_state())
 
     save_state(state)
     return jsonify({

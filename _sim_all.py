@@ -61,7 +61,7 @@ Today's session covers 3 proposals:
   2. {p2_company} — {p2_title}: "{p2_question}"
   3. {p3_company} — {p3_title}: "{p3_question}"
 
-CURRENT PROPOSAL ({proposal_num}/3): {company} — {title}
+{completed_section}CURRENT PROPOSAL ({proposal_num}/3): {company} — {title}
 "{question}"
 Background: {description}
 
@@ -69,24 +69,30 @@ TURN {turn} of {max_turns}{final_note}
 
 {history_section}
 {deals_section}
+Your token balance: {token_balance} tokens
 Your fellow legislators:
 {legislators_list}
 
 Instructions:
-- Vote YES or NO based on your voter's preferences and any coalition commitments you've made
+- Vote YES or NO based on your voter's preferences and any coalition commitments you have accepted
 - Give a short, sharp public statement (1-2 sentences) visible to the whole chamber
-- Only offer a deal if you genuinely need another legislator's vote to achieve your goal
-  Example: "I'll vote YES on Proposal 3 (Walmart) if you vote NO here"
+- If you received deal offers (shown above), explicitly ACCEPT or REJECT each one by name
+- Only offer a new deal if you genuinely need another legislator's vote to achieve your goal
+- Deals may ONLY involve the CURRENT proposal — never offer deals on already-decided proposals
 - Many turns you will NOT need to offer a deal — only do so when strategically necessary
-- On the final turn, cast your binding vote — no new deals
-- Think strategically: who shares your values? What can you trade?
+- On the final turn, cast your binding vote — no new deals, no new responses needed
 
 Respond in EXACTLY this format (no other text):
 VOTE: YES
 STATEMENT: [1-2 sentences]
+ACCEPT: [Exact display name of legislator whose deal you accept]
+REJECT: [Exact display name of legislator whose deal you decline]
 DEAL: [Exact legislator display name] — [terms of your offer]
+TOKENS: [integer — tokens you're committing to this deal, or 0]
 
-Omit the DEAL line entirely if you have no deal to offer or if this is the final turn.\
+You may have zero, one, or multiple ACCEPT/REJECT lines.
+Omit any line you don't need. Omit DEAL and TOKENS on the final turn.
+You cannot offer more tokens than your current balance.\
 """
 
 _lock = threading.Lock()
@@ -149,27 +155,38 @@ def negotiate(team_name, display_name, gt, state):
     history_section  = format_history(history, team_name, legislators)
     deals_section    = format_deals_for_me(history, team_name)
     final_note       = " — FINAL VOTE. No new deals." if turn == max_turns else ""
-    legislators_list = "\n".join(
-        f"  - {v}" for k, v in legislators.items() if k != team_name
-    )
+    other_legs = [(k, v) for k, v in legislators.items() if k != team_name]
+    random.shuffle(other_legs)
+    legislators_list = "\n".join(f"  - {v}" for k, v in other_legs)
+    token_balance    = state.get("token_balances", {}).get(team_name, 100)
+
+    idx = state["proposal_idx"]
+    if idx > 0:
+        done = "\n".join(f"  - Proposal {i+1} ({proposals[i]['company']}) — ALREADY DECIDED"
+                         for i in range(idx))
+        completed_section = f"ALREADY DECIDED (do not offer deals on these):\n{done}\n\n"
+    else:
+        completed_section = ""
 
     prompt = NEGOTIATE_PROMPT.format(
-        display_name    = display_name,
-        preferences     = make_preferences(gt),
+        display_name      = display_name,
+        preferences       = make_preferences(gt),
         p1_company=proposals[0]["company"], p1_title=proposals[0]["title"], p1_question=proposals[0]["question"],
         p2_company=proposals[1]["company"], p2_title=proposals[1]["title"], p2_question=proposals[1]["question"],
         p3_company=proposals[2]["company"], p3_title=proposals[2]["title"], p3_question=proposals[2]["question"],
-        proposal_num    = state["proposal_idx"] + 1,
-        company         = p["company"],
-        title           = p["title"],
-        question        = p["question"],
-        description     = p["description"],
-        turn            = turn,
-        max_turns       = max_turns,
-        final_note      = final_note,
-        history_section = history_section,
-        deals_section   = deals_section,
-        legislators_list= legislators_list,
+        completed_section = completed_section,
+        proposal_num      = idx + 1,
+        company           = p["company"],
+        title             = p["title"],
+        question          = p["question"],
+        description       = p["description"],
+        turn              = turn,
+        max_turns         = max_turns,
+        final_note        = final_note,
+        history_section   = history_section,
+        deals_section     = deals_section,
+        token_balance     = token_balance,
+        legislators_list  = legislators_list,
     )
 
     completion = client.chat.completions.create(
@@ -180,9 +197,11 @@ def negotiate(team_name, display_name, gt, state):
     )
     response = completion.choices[0].message.content.strip()
 
-    vote_val  = "ABSTAIN"
-    statement = ""
-    deal      = None
+    vote_val       = "ABSTAIN"
+    statement      = ""
+    deal           = None
+    deal_responses = []
+    raw_tokens     = 0
 
     for line in response.splitlines():
         if line.startswith("VOTE:"):
@@ -191,6 +210,17 @@ def negotiate(team_name, display_name, gt, state):
                 vote_val = v
         elif line.startswith("STATEMENT:"):
             statement = line[10:].strip()
+        elif line.startswith("ACCEPT:"):
+            name = line[7:].strip()
+            # Only accept if that person actually offered a deal (avoid hallucinations)
+            if name and any(d.get("from_display","").strip().lower() == name.strip().lower()
+                           for td in history for d in td.get("deals",[])):
+                deal_responses.append({"from_display": name, "response": "accepted"})
+        elif line.startswith("REJECT:"):
+            name = line[7:].strip()
+            if name and any(d.get("from_display","").strip().lower() == name.strip().lower()
+                           for td in history for d in td.get("deals",[])):
+                deal_responses.append({"from_display": name, "response": "rejected"})
         elif line.startswith("DEAL:") and turn < max_turns:
             deal_text = line[5:].strip()
             for sep in (" — ", " -- ", " - "):
@@ -203,12 +233,20 @@ def negotiate(team_name, display_name, gt, state):
                     )
                     deal = {"to_team": to_team, "to_display": to_display.strip(), "terms": terms.strip()}
                     break
+        elif line.startswith("TOKENS:"):
+            try:
+                raw_tokens = int(line[7:].strip())
+            except ValueError:
+                raw_tokens = 0
 
-    # Randomly skip ~60% of deals to keep volume realistic in simulation
-    if deal and random.random() < 0.60:
+    if deal:
+        deal["token_amount"] = max(0, min(raw_tokens, token_balance))
+
+    # Randomly skip ~20% of deals (lower for testing; raise to 0.60 for full class run)
+    if deal and random.random() < 0.20:
         deal = None
 
-    return {"vote": vote_val, "statement": statement, "deal": deal}
+    return {"vote": vote_val, "statement": statement, "deal": deal, "deal_responses": deal_responses}
 
 
 def run_agent(team_name, display_name, gt):
@@ -253,10 +291,11 @@ def run_agent(team_name, display_name, gt):
                 try:
                     result = negotiate(team_name, display_name, gt, state)
                     requests.post(f"{SERVER_URL}/submit", json={
-                        "team_name": team_name,
-                        "vote":      result["vote"],
-                        "statement": result["statement"],
-                        "deal":      result["deal"],
+                        "team_name":      team_name,
+                        "vote":           result["vote"],
+                        "statement":      result["statement"],
+                        "deal":           result["deal"],
+                        "deal_responses": result.get("deal_responses", []),
                     }, timeout=15).raise_for_status()
                     submitted_this_turn = True
                     deal_str = f" DEAL→{result['deal']['to_display'].split()[-1]}" if result.get("deal") else ""
@@ -279,9 +318,12 @@ if __name__ == "__main__":
         print("ERROR: OPENROUTER_API_KEY not set")
         sys.exit(1)
 
-    print(f"Starting {len(STUDENTS)} agents...")
+    # Pass a number as arg to run a subset, e.g. `python _sim_all.py 5`
+    n = int(sys.argv[1]) if len(sys.argv) > 1 else len(STUDENTS)
+    roster = random.sample(STUDENTS, min(n, len(STUDENTS)))
+    print(f"Starting {len(roster)} agents...")
     threads = []
-    for team_name, display_name, gt in STUDENTS:
+    for team_name, display_name, gt in roster:
         t = threading.Thread(target=run_agent, args=(team_name, display_name, gt), daemon=True)
         threads.append(t)
         t.start()

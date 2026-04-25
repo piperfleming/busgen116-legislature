@@ -171,67 +171,107 @@
     font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
     color: #9ca3af; border-bottom: 1px solid #e5e7eb; flex-shrink: 0;
     font-family: 'Segoe UI', system-ui, sans-serif; background: #fff;
+    display: flex; align-items: center;
   }
-
-  #deals-threads {
-    flex: 1; overflow-y: auto;
-    display: flex; flex-direction: column; gap: 1px; background: #e5e7eb;
+  #deals-stats {
+    margin-left: auto; font-size: 10px; letter-spacing: 0;
+    text-transform: none; color: #6b7280;
   }
+  #deals-stats .sn { color: #d97706; font-weight: bold; }
 
-  .thread-card {
-    background: #fff;
-    padding: 11px 14px;
-    border-left: 3px solid #f59e0b;
+  /* ── Pending section ── */
+  #pending-section {
+    flex-shrink: 0; background: #fff;
+    border-bottom: 2px solid #e5e7eb;
   }
-
-  .thread-pair-header {
-    display: flex; align-items: center; gap: 10px; margin-bottom: 9px;
+  #pending-label {
+    padding: 7px 14px 4px;
+    font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: #9ca3af; font-family: 'Segoe UI', system-ui, sans-serif;
   }
-
+  #pending-chips {
+    padding: 6px 12px 10px;
+    display: flex; flex-wrap: wrap; gap: 7px;
+    min-height: 44px;
+  }
+  .deal-chip {
+    display: flex; align-items: center; gap: 7px;
+    background: #f9fafb; border: 1px solid #e5e7eb;
+    border-radius: 20px; padding: 4px 10px 4px 4px;
+    cursor: default;
+  }
   .pair-avatars {
-    position: relative; width: 40px; height: 24px; flex-shrink: 0;
+    position: relative; width: 36px; height: 22px; flex-shrink: 0;
   }
   .pair-avatar {
-    width: 24px; height: 24px; border-radius: 50%;
+    width: 22px; height: 22px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 8px; font-weight: bold; font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 7px; font-weight: bold; font-family: 'Segoe UI', system-ui, sans-serif;
     border: 2px solid #fff; position: absolute;
   }
   .pair-avatar:first-child { left: 0; z-index: 2; }
-  .pair-avatar:last-child  { left: 16px; z-index: 1; }
+  .pair-avatar:last-child  { left: 13px; z-index: 1; }
   .av-yes { background: #d1fae5; color: #065f46; }
   .av-no  { background: #fee2e2; color: #991b1b; }
   .av-pending { background: #f3f4f6; color: #9ca3af; }
-
-  .pair-names {
-    font-size: 11px; font-weight: bold; color: #374151;
-    font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.3;
-    display: flex; flex-direction: column; gap: 1px;
+  .ask-badge {
+    font-size: 9px; font-weight: bold; letter-spacing: 0.04em;
+    padding: 2px 7px; border-radius: 10px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
   }
-  .pair-names .pair-sep { color: #fbbf24; font-size: 9px; }
-
-  .thread-msg {
-    margin-top: 5px;
-    background: #fffbeb;
-    border-radius: 6px;
-    padding: 5px 8px;
-    border-left: 2px solid #fcd34d;
+  .ask-yes { background: #d1fae5; color: #065f46; }
+  .ask-no  { background: #fee2e2; color: #991b1b; }
+  .no-pending-msg {
+    color: #d1d5db; font-size: 11px; font-style: italic;
+    font-family: 'Segoe UI', system-ui, sans-serif; padding: 4px 2px;
   }
-  .msg-header {
-    display: flex; align-items: center; gap: 6px; margin-bottom: 2px;
-  }
-  .msg-turn { font-size: 9px; color: #d97706; font-family: 'Segoe UI', system-ui, sans-serif; font-weight: bold; }
-  .msg-from { font-size: 10px; font-weight: bold; color: #374151; font-family: 'Segoe UI', system-ui, sans-serif; }
-  .msg-arrow { font-size: 9px; color: #9ca3af; }
-  .msg-to   { font-size: 10px; color: #6b7280; font-family: 'Segoe UI', system-ui, sans-serif; }
-  .msg-terms {
-    font-size: 11px; color: #4b5563; font-style: italic; line-height: 1.4;
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  .tok-badge {
+    font-size: 8px; font-weight: 600; color: #7c3aed;
+    background: #ede9fe; border-radius: 8px; padding: 1px 5px;
+    font-family: 'Segoe UI', system-ui, sans-serif; flex-shrink: 0;
   }
 
-  .no-deals-msg {
-    color: #9ca3af; font-size: 13px; font-style: italic;
-    padding: 24px 16px; font-family: 'Segoe UI', system-ui, sans-serif;
+  /* ── Commitments section ── */
+  #commitments-section {
+    flex: 1; display: flex; flex-direction: column; overflow: hidden;
+  }
+  #commitments-label {
+    padding: 7px 14px 4px; flex-shrink: 0;
+    font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: #9ca3af; font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+  #commitments-list {
+    flex: 1; overflow-y: auto;
+    padding: 4px 12px 12px; display: flex; flex-direction: column; gap: 14px;
+  }
+  .commit-group {
+    border-left: 3px solid #e5e7eb; padding-left: 10px;
+  }
+  .commit-group-label {
+    font-size: 9px; font-weight: bold; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #9ca3af;
+    font-family: 'Segoe UI', system-ui, sans-serif; margin-bottom: 7px;
+  }
+  .commit-entry {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+  }
+  .commit-names {
+    font-size: 11px; color: #374151;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .commit-turn {
+    font-size: 9px; color: #9ca3af; margin-left: auto; flex-shrink: 0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+  @keyframes commit-in {
+    from { opacity: 0; transform: translateY(-5px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .commit-new { animation: commit-in 0.35s ease forwards; }
+  .no-commits-msg {
+    color: #d1d5db; font-size: 11px; font-style: italic;
+    font-family: 'Segoe UI', system-ui, sans-serif; padding: 4px 2px;
   }
 
   /* ══════════════════════════════════════════
@@ -294,6 +334,17 @@
   <div id="chamber-panel">
     <svg id="chamber-svg" viewBox="0 0 500 290"
          xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax meet">
+      <defs>
+        <marker id="arr-green" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+          <path d="M0,0.5 L0,6.5 L7,3.5 z" fill="#059669"/>
+        </marker>
+        <marker id="arr-amber" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+          <path d="M0,0.5 L0,6.5 L7,3.5 z" fill="#d97706"/>
+        </marker>
+        <marker id="arr-red" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+          <path d="M0,0.5 L0,6.5 L7,3.5 z" fill="#dc2626"/>
+        </marker>
+      </defs>
       <rect x="215" y="260" width="70" height="16" rx="3" fill="#1a1a2e" opacity="0.1"/>
       <text x="250" y="272" text-anchor="middle" font-size="7.5" fill="#9ca3af"
             font-family="'Segoe UI', sans-serif" letter-spacing="0.1em">PODIUM</text>
@@ -303,10 +354,17 @@
   </div>
 </div>
 
-<!-- Right: deal threads -->
+<!-- Right: pending + commitments -->
 <div id="deals-panel">
-  <div id="deals-header">Deals &amp; Coalitions</div>
-  <div id="deals-threads"><div class="no-deals-msg">No deals offered yet.</div></div>
+  <div id="deals-header">Deals &amp; Coalitions<span id="deals-stats"></span></div>
+  <div id="pending-section">
+    <div id="pending-label">Pending this turn</div>
+    <div id="pending-chips"></div>
+  </div>
+  <div id="commitments-section">
+    <div id="commitments-label">Commitments</div>
+    <div id="commitments-list"></div>
+  </div>
 </div>
 
 <script>
@@ -330,25 +388,25 @@ const phasePills = {
 // ── Seat animation ───────────────────────────────────────────────
 let _animKey = null, _animTimer = null, _animRevealed = {};
 
-function updateSeats(legislators, votes, proposalIdx, turn, phase) {
+function updateSeats(legislators, votes, proposalIdx, turn, phase, tokenBalances = {}) {
   const key = `${proposalIdx}-${turn}`;
   if (phase !== 'results') {
     if (_animTimer) { clearTimeout(_animTimer); _animTimer = null; }
     _animKey = null;
-    buildSeats(legislators, votes);
+    buildSeats(legislators, votes, tokenBalances);
     return;
   }
   if (_animKey === key) return;
   if (_animTimer) { clearTimeout(_animTimer); _animTimer = null; }
   _animKey = key; _animRevealed = {};
   const teams = Object.keys(votes).filter(t => votes[t]).sort(() => Math.random() - 0.5);
-  buildSeats(legislators, {});
+  buildSeats(legislators, {}, tokenBalances);
   let i = 0;
   const delay = Math.min(1800 / Math.max(teams.length, 1), 90);
   function step() {
     if (i >= teams.length) { _animTimer = null; return; }
     _animRevealed[teams[i]] = votes[teams[i]]; i++;
-    buildSeats(legislators, _animRevealed);
+    buildSeats(legislators, _animRevealed, tokenBalances);
     _animTimer = setTimeout(step, delay);
   }
   _animTimer = setTimeout(step, 200);
@@ -424,6 +482,15 @@ function renderSpotlight(legislators, votes, stmts, phase) {
   document.getElementById('sp-stmt').textContent = `"${stmt}"`;
 }
 
+// ── Flip detection ───────────────────────────────────────────────
+let _flashExpires    = {};   // team → expiry timestamp
+let _detectedFlips   = new Set();
+let _lastProposalIdx = -1;
+
+// ── Deal arc state ───────────────────────────────────────────────
+let _dealAcceptedAt  = {};   // pairKey → timestamp when acceptance first detected
+let _seenCommitments = new Set(); // never reset — tracks fade-in for new commit entries
+
 // ── SVG + seat positions ─────────────────────────────────────────
 let _seatPositions = {}; // team → {x, y}
 function initials(display) {
@@ -453,7 +520,7 @@ function seatPos(i, rowN, radius) {
   return { x: SVG_CX + radius * Math.cos(angle), y: SVG_CY - radius * Math.sin(angle) };
 }
 
-function buildSeats(legislators, votes) {
+function buildSeats(legislators, votes, tokenBalances = {}) {
   const g = document.getElementById('seats');
   g.innerHTML = '';
   _seatPositions = {};
@@ -477,7 +544,8 @@ function buildSeats(legislators, votes) {
       circ.setAttribute('r', DOT_R); circ.setAttribute('fill', fill);
       circ.setAttribute('stroke', stroke); circ.setAttribute('stroke-width', v ? '2.5' : '1.5');
       const ttl = document.createElementNS(ns, 'title');
-      ttl.textContent = `${display}: ${v || 'pending'}`;
+      const bal = tokenBalances[team] ?? 100;
+      ttl.textContent = `${display}: ${v || 'pending'} · ${bal} tokens`;
       circ.appendChild(ttl);
       const txt = document.createElementNS(ns, 'text');
       txt.setAttribute('x', pos.x); txt.setAttribute('y', pos.y + 4);
@@ -486,100 +554,241 @@ function buildSeats(legislators, votes) {
       txt.setAttribute('font-family', "'Segoe UI', system-ui, sans-serif");
       txt.setAttribute('fill', tFill);
       txt.textContent = initials(display);
-      g.appendChild(circ); g.appendChild(txt);
+      // Token badge below seat
+      const tokColor = bal >= 75 ? '#059669' : bal >= 45 ? '#d97706' : '#dc2626';
+      const tokTxt = document.createElementNS(ns, 'text');
+      tokTxt.setAttribute('x', pos.x); tokTxt.setAttribute('y', pos.y + DOT_R + 8);
+      tokTxt.setAttribute('text-anchor', 'middle'); tokTxt.setAttribute('font-size', '7');
+      tokTxt.setAttribute('font-weight', '600');
+      tokTxt.setAttribute('font-family', "'Segoe UI', system-ui, sans-serif");
+      tokTxt.setAttribute('fill', tokColor);
+      tokTxt.textContent = String(bal);
+      // Ripple ring for vote flips
+      if (v && _flashExpires[team] && _flashExpires[team] > Date.now()) {
+        const ripple = document.createElementNS(ns, 'circle');
+        ripple.setAttribute('cx', pos.x); ripple.setAttribute('cy', pos.y);
+        ripple.setAttribute('r', DOT_R); ripple.setAttribute('fill', 'none');
+        ripple.setAttribute('stroke', v === 'YES' ? '#059669' : '#dc2626');
+        ripple.setAttribute('stroke-width', '2.5');
+        const aR = document.createElementNS(ns, 'animate');
+        aR.setAttribute('attributeName', 'r');
+        aR.setAttribute('from', DOT_R); aR.setAttribute('to', DOT_R + 14);
+        aR.setAttribute('dur', '1.3s'); aR.setAttribute('repeatCount', 'indefinite');
+        const aO = document.createElementNS(ns, 'animate');
+        aO.setAttribute('attributeName', 'opacity');
+        aO.setAttribute('from', '0.85'); aO.setAttribute('to', '0');
+        aO.setAttribute('dur', '1.3s'); aO.setAttribute('repeatCount', 'indefinite');
+        ripple.appendChild(aR); ripple.appendChild(aO);
+        g.appendChild(ripple);
+      }
+      g.appendChild(circ); g.appendChild(txt); g.appendChild(tokTxt);
       _seatPositions[team] = pos;
     }
   });
 }
 
 // ── Deal arcs in SVG ─────────────────────────────────────────────
-function buildDealArcs(allTurns) {
+function dealAskColor(terms) {
+  const t = (terms || '').toLowerCase();
+  // Look for what vote the offerer is asking the recipient to cast
+  if (/\byou\s+vote\s+yes\b|\bvote\s+yes\s+here\b/.test(t)) return 'yes';
+  if (/\byou\s+vote\s+no\b|\bvote\s+no\s+here\b/.test(t))  return 'no';
+  // Fallback: whichever appears last in the terms is likely the ask
+  const yi = t.lastIndexOf('yes'), ni = t.lastIndexOf('no');
+  return yi > ni ? 'yes' : ni > yi ? 'no' : 'yes';
+}
+
+function buildDealArcs(allTurns, currentTurn) {
   const g = document.getElementById('deal-arcs');
   g.innerHTML = '';
   const ns = 'http://www.w3.org/2000/svg';
 
-  // Count deals per pair
+  // One entry per directed pair (from→to)
   const pairs = new Map();
-  allTurns.forEach(td => {
+  allTurns.forEach((td, turnIdx) => {
+    const currVotes = td.votes || {};
+    const nextVotes = (allTurns[turnIdx + 1]?.votes) || {};
     for (const d of (td.deals || [])) {
-      const key = [d.from_team, d.to_team].sort().join('|');
-      if (!pairs.has(key)) pairs.set(key, { from: d.from_team, to: d.to_team, count: 0 });
-      pairs.get(key).count++;
+      const key = `${d.from_team}|${d.to_team}`;
+      if (!pairs.has(key)) pairs.set(key, {
+        from: d.from_team, to: d.to_team,
+        ask: dealAskColor(d.terms),
+        accepted: false,
+        dealTurn: turnIdx + 1,
+      });
+      const pair = pairs.get(key);
+      if (d.response === 'accepted') pair.accepted = true;
+      // Infer from vote flip
+      const vB = currVotes[d.to_team], vA = nextVotes[d.to_team];
+      if (vB && vA && vB !== vA) pair.accepted = true;
     }
   });
 
-  for (const pair of pairs.values()) {
+  const SOLID_MS = 5000; // how long the solid line lingers after acceptance
+
+  for (const [key, pair] of pairs) {
+    // Disappear if deal's turn has passed and it wasn't accepted
+    if (pair.dealTurn < currentTurn && !pair.accepted) continue;
+
     const posA = _seatPositions[pair.from];
     const posB = _seatPositions[pair.to];
     if (!posA || !posB) continue;
 
-    const line = document.createElementNS(ns, 'line');
-    line.setAttribute('x1', posA.x); line.setAttribute('y1', posA.y);
-    line.setAttribute('x2', posB.x); line.setAttribute('y2', posB.y);
-    line.setAttribute('stroke', '#f59e0b');
-    line.setAttribute('stroke-width', Math.min(1 + pair.count * 0.6, 3.5));
-    line.setAttribute('opacity', '0.38');
-    line.setAttribute('stroke-linecap', 'round');
-    g.appendChild(line);
+    const dx = posB.x - posA.x, dy = posB.y - posA.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 1) continue;
+    const pad = DOT_R + 3, tip = DOT_R + 7;
+    const x1 = posA.x + dx / dist * pad, y1 = posA.y + dy / dist * pad;
+    const x2 = posB.x - dx / dist * tip, y2 = posB.y - dy / dist * tip;
+
+    const color  = pair.ask === 'yes' ? '#059669' : '#dc2626';
+    const marker = pair.ask === 'yes' ? 'url(#arr-green)' : 'url(#arr-red)';
+
+    if (pair.accepted) {
+      // Track first detection time
+      if (!_dealAcceptedAt[key]) _dealAcceptedAt[key] = Date.now();
+      const elapsed = Date.now() - _dealAcceptedAt[key];
+      if (elapsed > SOLID_MS) continue; // disappeared
+
+      // Solid, fading out
+      const fade = elapsed < SOLID_MS * 0.5
+        ? 0.9
+        : 0.9 * (1 - (elapsed - SOLID_MS * 0.5) / (SOLID_MS * 0.5));
+
+      const line = document.createElementNS(ns, 'line');
+      line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+      line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+      line.setAttribute('stroke', color);
+      line.setAttribute('stroke-width', '3');
+      line.setAttribute('opacity', fade.toFixed(2));
+      line.setAttribute('marker-end', marker);
+      g.appendChild(line);
+    } else {
+      // Animated dashed arrow (pending / unanswered)
+      const dash = 7;
+      const line = document.createElementNS(ns, 'line');
+      line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+      line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+      line.setAttribute('stroke', color);
+      line.setAttribute('stroke-width', '1.8');
+      line.setAttribute('opacity', '0.55');
+      line.setAttribute('stroke-dasharray', `${dash} ${dash}`);
+      line.setAttribute('marker-end', marker);
+      const anim = document.createElementNS(ns, 'animate');
+      anim.setAttribute('attributeName', 'stroke-dashoffset');
+      anim.setAttribute('from', String(dash * 2));
+      anim.setAttribute('to', '0');
+      anim.setAttribute('dur', '1.3s');
+      anim.setAttribute('repeatCount', 'indefinite');
+      line.appendChild(anim);
+      g.appendChild(line);
+    }
   }
 }
 
-// ── Deal threads ─────────────────────────────────────────────────
-function buildDealThreads(allTurns, votes) {
-  const container = document.getElementById('deals-threads');
-  const allDeals  = [];
-  allTurns.forEach((td, i) => {
-    for (const d of (td.deals || [])) allDeals.push({ ...d, turn: i + 1 });
-  });
-  if (!allDeals.length) {
-    container.innerHTML = '<div class="no-deals-msg">No deals offered yet.</div>';
-    return;
-  }
+// ── Deal panel (pending + commitments) ───────────────────────────
+function buildDealThreads(allTurns, votes) { /* legacy stub — replaced below */ }
+const PROPOSAL_COLORS = ['#3b82f6', '#8b5cf6', '#059669'];
 
-  const threads = new Map();
-  for (const d of allDeals) {
-    const key = [d.from_team, d.to_team].sort().join('|');
-    if (!threads.has(key)) threads.set(key, { teamA: d.from_team, teamB: d.to_team, dispA: d.from_display, dispB: d.to_display, msgs: [] });
-    threads.get(key).msgs.push(d);
-  }
-  const sorted = [...threads.values()].sort((x, y) => {
-    const xBack = new Set(x.msgs.map(m => m.from_team)).size > 1 ? 1 : 0;
-    const yBack = new Set(y.msgs.map(m => m.from_team)).size > 1 ? 1 : 0;
-    return yBack !== xBack ? yBack - xBack : y.msgs.length - x.msgs.length;
-  }).slice(0, MAX_THREADS);
+function buildDealPanel(history, legislators, currentTurn, proposalIdx, currentVotes, proposals) {
+  const statsEl      = document.getElementById('deals-stats');
+  const pendingEl    = document.getElementById('pending-chips');
+  const commitsList  = document.getElementById('commitments-list');
 
-  container.innerHTML = '';
-  for (const thread of sorted) {
-    const vA = votes[thread.teamA];
-    const vB = votes[thread.teamB];
-    const clA = vA === 'YES' ? 'av-yes' : vA === 'NO' ? 'av-no' : 'av-pending';
-    const clB = vB === 'YES' ? 'av-yes' : vB === 'NO' ? 'av-no' : 'av-pending';
+  // ── Pending: deals offered THIS turn on the current proposal ──
+  const pid       = proposals[proposalIdx]?.id;
+  const allTurns  = pid ? (history[pid] || []) : [];
+  const curTurnData = allTurns[currentTurn - 1] || {};
+  const prevVotes = (allTurns[currentTurn - 2]?.votes) || {};
+  const pending   = curTurnData.deals || [];
 
-    const card = document.createElement('div');
-    card.className = 'thread-card';
-    card.innerHTML = `
-      <div class="thread-pair-header">
+  pendingEl.innerHTML = '';
+  if (pending.length === 0) {
+    pendingEl.innerHTML = '<span class="no-pending-msg">None yet.</span>';
+  } else {
+    for (const d of pending) {
+      const vA = prevVotes[d.from_team], vB = prevVotes[d.to_team];
+      const clA = vA === 'YES' ? 'av-yes' : vA === 'NO' ? 'av-no' : 'av-pending';
+      const clB = vB === 'YES' ? 'av-yes' : vB === 'NO' ? 'av-no' : 'av-pending';
+      const ask = dealAskColor(d.terms);
+      const chip = document.createElement('div');
+      chip.className = 'deal-chip';
+      chip.title = `${shortName(d.from_display)} → ${shortName(d.to_display)}: "${d.terms}"`;
+      const tokBadge = d.token_amount > 0 ? `<span class="tok-badge">${d.token_amount}t</span>` : '';
+      chip.innerHTML = `
         <div class="pair-avatars">
-          <div class="pair-avatar ${clA}">${initials(thread.dispA)}</div>
-          <div class="pair-avatar ${clB}">${initials(thread.dispB)}</div>
+          <div class="pair-avatar ${clA}">${initials(d.from_display)}</div>
+          <div class="pair-avatar ${clB}">${initials(d.to_display)}</div>
         </div>
-        <div class="pair-names">
-          <span>${esc(shortName(thread.dispA))}</span>
-          <span class="pair-sep">↔ ${esc(shortName(thread.dispB))}</span>
-        </div>
-      </div>
-      ${thread.msgs.map(d => `
-        <div class="thread-msg">
-          <div class="msg-header">
-            <span class="msg-turn">T${d.turn}</span>
-            <span class="msg-from">${esc(shortName(d.from_display))}</span>
-            <span class="msg-arrow">→</span>
-            <span class="msg-to">${esc(shortName(d.to_display))}</span>
-          </div>
-          <div class="msg-terms">"${esc(d.terms)}"</div>
-        </div>`).join('')}`;
-    container.appendChild(card);
+        <span class="ask-badge ask-${ask}">${ask.toUpperCase()}</span>${tokBadge}`;
+      pendingEl.appendChild(chip);
+    }
   }
+
+  // ── Commitments: accepted deals across all proposals so far ──
+  commitsList.innerHTML = '';
+  let totalCommits = 0;
+
+  for (let pi = 0; pi <= proposalIdx; pi++) {
+    const prop = proposals[pi];
+    if (!prop) continue;
+    const pTurns = history[prop.id] || [];
+    const commits = [];
+
+    pTurns.forEach((td, ti) => {
+      const cv = td.votes || {};
+      const nv = (pTurns[ti + 1]?.votes) || {};
+      for (const d of (td.deals || [])) {
+        let accepted = d.response === 'accepted';
+        if (!accepted) {
+          const vB = cv[d.to_team], vA = nv[d.to_team];
+          if (vB && vA && vB !== vA) accepted = true;
+        }
+        if (accepted) commits.push({ ...d, turn: ti + 1, cv });
+      }
+    });
+
+    if (!commits.length) continue;
+    totalCommits += commits.length;
+
+    const group = document.createElement('div');
+    group.className = 'commit-group';
+    group.style.borderLeftColor = PROPOSAL_COLORS[pi] || '#9ca3af';
+    group.innerHTML = `<div class="commit-group-label">${esc(prop.company)}</div>`;
+
+    for (const d of commits) {
+      const key = `${d.from_team}|${d.to_team}|${d.turn}|${pi}`;
+      const isNew = !_seenCommitments.has(key);
+      if (isNew) _seenCommitments.add(key);
+      const ask = dealAskColor(d.terms);
+      const vA = d.cv[d.from_team], vB = d.cv[d.to_team];
+      const clA = vA === 'YES' ? 'av-yes' : vA === 'NO' ? 'av-no' : 'av-pending';
+      const clB = vB === 'YES' ? 'av-yes' : vB === 'NO' ? 'av-no' : 'av-pending';
+
+      const entry = document.createElement('div');
+      entry.className = `commit-entry${isNew ? ' commit-new' : ''}`;
+      entry.title = `"${d.terms}"`;
+      const cTokBadge = d.token_amount > 0 ? `<span class="tok-badge">${d.token_amount}t</span>` : '';
+      entry.innerHTML = `
+        <div class="pair-avatars">
+          <div class="pair-avatar ${clA}">${initials(d.from_display)}</div>
+          <div class="pair-avatar ${clB}">${initials(d.to_display)}</div>
+        </div>
+        <span class="ask-badge ask-${ask}">${ask.toUpperCase()}</span>${cTokBadge}
+        <span class="commit-names">${esc(shortName(d.from_display))} → ${esc(shortName(d.to_display))}</span>
+        <span class="commit-turn">T${d.turn}</span>`;
+      group.appendChild(entry);
+    }
+    commitsList.appendChild(group);
+  }
+
+  if (!commitsList.children.length) {
+    commitsList.innerHTML = '<span class="no-commits-msg">None yet.</span>';
+  }
+
+  statsEl.innerHTML = totalCommits
+    ? `<span class="sn">${totalCommits}</span> committed`
+    : '';
 }
 
 // ── Poll ─────────────────────────────────────────────────────────
@@ -587,7 +796,7 @@ async function poll() {
   try {
     const r = await fetch('/state');
     const s = await r.json();
-    const { phase, proposal, turn, legislators = {}, history = {} } = s;
+    const { phase, proposal, turn, legislators = {}, history = {}, token_balances = {} } = s;
 
     document.getElementById('waiting-overlay').classList.toggle('show', phase === 'waiting');
     document.getElementById('waiting-count').textContent = s.total_registered;
@@ -621,11 +830,27 @@ async function poll() {
     document.getElementById('tally-fill').style.width = tot > 0 ? `${yes/tot*100}%` : '50%';
     document.getElementById('tally-sub').textContent  = `${s.submitted_count} / ${s.total_registered} submitted`;
 
-    updateSeats(legislators, votes, s.proposal_idx, turn, phase);
-    buildDealArcs(allTurns);
+    // Detect vote flips vs previous turn (for seat ripple animation)
+    if (s.proposal_idx !== _lastProposalIdx) {
+      _lastProposalIdx = s.proposal_idx;
+      _flashExpires = {}; _detectedFlips = new Set(); _dealAcceptedAt = {};
+    }
+    if (turn > 1) {
+      const prevVotes = (allTurns[turn - 2]?.votes) || {};
+      for (const [team, vote] of Object.entries(votes)) {
+        const fk = `${turn}-${team}`;
+        if (!_detectedFlips.has(fk) && prevVotes[team] && prevVotes[team] !== vote) {
+          _detectedFlips.add(fk);
+          _flashExpires[team] = Date.now() + 7000;
+        }
+      }
+    }
+
+    updateSeats(legislators, votes, s.proposal_idx, turn, phase, token_balances);
+    buildDealArcs(allTurns, turn);
     initSpotlight(legislators, s.proposal_idx, turn);
     renderSpotlight(legislators, votes, stmts, phase);
-    buildDealThreads(allTurns, votes);
+    buildDealPanel(history, legislators, turn, s.proposal_idx, votes, s.proposals);
 
   } catch(e) { console.error(e); }
   setTimeout(poll, POLL);
