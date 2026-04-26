@@ -329,8 +329,8 @@
 
 <div id="waiting-overlay" class="show">
   <h2>Agentic Legislature</h2>
-  <div class="big" id="waiting-count">0</div>
-  <p>legislators connected</p>
+  <div class="big" id="waiting-count">…</div>
+  <p id="waiting-sub">connecting…</p>
 </div>
 
 <!-- Left: info + spotlight + chamber -->
@@ -851,12 +851,14 @@ function buildTokenLeaderboard(legislators, tokenBalances, phase, history, propo
 // ── Poll ─────────────────────────────────────────────────────────
 async function poll() {
   try {
-    const r = await fetch('/state');
+    const r = await fetch('/state?_=' + Date.now());
+    if (!r.ok) throw new Error('HTTP ' + r.status);
     const s = await r.json();
     const { phase, proposal, turn, legislators = {}, history = {}, token_balances = {} } = s;
 
     document.getElementById('waiting-overlay').classList.toggle('show', phase === 'waiting');
     document.getElementById('waiting-count').textContent = s.total_registered;
+    document.getElementById('waiting-sub').textContent = 'legislators connected';
 
     const pill = document.getElementById('phase-pill');
     const [lbl, cls] = phasePills[phase] || ['—', 'pill-waiting'];
@@ -912,7 +914,11 @@ async function poll() {
       phase === 'decision' ? '#fef9c3' : '';
     buildTokenLeaderboard(legislators, token_balances, phase, history, s.proposal_idx, s.proposals);
 
-  } catch(e) { console.error(e); }
+  } catch(e) {
+    console.error('Poll error:', e);
+    document.getElementById('waiting-overlay').classList.add('show');
+    document.getElementById('waiting-sub').textContent = 'error: ' + e.message + ' — retrying…';
+  }
   setTimeout(poll, POLL);
 }
 
