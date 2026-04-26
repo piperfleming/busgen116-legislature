@@ -269,12 +269,6 @@
     font-size: 10px; font-weight: bold; flex-shrink: 0; width: 26px; text-align: right;
     font-family: 'Segoe UI', system-ui, sans-serif;
   }
-  .tok-bar {
-    height: 4px; border-radius: 2px; background: #e5e7eb; flex: 1;
-  }
-  .tok-bar-fill {
-    height: 100%; border-radius: 2px;
-  }
 
 
   /* ══════════════════════════════════════════
@@ -767,17 +761,14 @@ function buildTokenLeaderboard(legislators, tokenBalances, phase) {
 
   header.textContent = 'Tokens';
   list.innerHTML = '';
-  const maxBal = Math.max(...rows.map(r => r.bal), 100);
 
   rows.forEach(({ name, bal }) => {
     const balColor = bal >= 85 ? '#059669' : bal >= 55 ? '#d97706' : '#dc2626';
-    const pct      = Math.round((bal / maxBal) * 100);
 
     const row = document.createElement('div');
     row.className = 'tok-row';
     row.innerHTML = `
       <span class="tok-row-name">${esc(name)}</span>
-      <div class="tok-bar"><div class="tok-bar-fill" style="width:${pct}%;background:${balColor}"></div></div>
       <span class="tok-row-val" style="color:${balColor}">${bal}</span>`;
     list.appendChild(row);
   });
