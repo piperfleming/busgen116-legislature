@@ -40,7 +40,7 @@
     flex-shrink: 0;
   }
   #hdr-title {
-    font-size: 11px; font-weight: bold; letter-spacing: 0.14em;
+    font-size: 12px; font-weight: bold; letter-spacing: 0.1em;
     text-transform: uppercase; opacity: 0.8; white-space: nowrap;
   }
   #hdr-right { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
@@ -655,9 +655,10 @@ function dealAskColor(terms) {
   return yi > ni ? 'yes' : ni > yi ? 'no' : 'yes';
 }
 
-function buildDealArcs(allTurns, currentTurn, legislators = {}) {
+function buildDealArcs(allTurns, currentTurn, legislators = {}, phase = '') {
   const g = document.getElementById('deal-arcs');
   g.innerHTML = '';
+  if (phase === 'decision') return;
   const ns = 'http://www.w3.org/2000/svg';
 
   // Fallback: find team key by display name when to_team is empty
@@ -783,6 +784,7 @@ function buildDealPanel(history, legislators, currentTurn, proposalIdx, currentV
       chip.className = 'deal-chip';
       chip.title = pg.senders.map(s => `${shortName(s.from_display)}: "${s.terms}"`).join('\n');
       const tokBadge = pg.totalTok > 0 ? `<span class="tok-badge">${pg.totalTok}t</span>` : '';
+      // per-deal: show each sender's actual token_amount next to their terms
       const senderAvatars = pg.senders.map(s => {
         const vA = prevVotes[s.from_team];
         const clA = vA === 'YES' ? 'av-yes' : vA === 'NO' ? 'av-no' : 'av-pending';
@@ -793,9 +795,11 @@ function buildDealPanel(history, legislators, currentTurn, proposalIdx, currentV
       if (response === 'accepted')       chip.classList.add('deal-accepted');
       else if (response === 'rejected')  chip.classList.add('deal-rejected');
       else if (phase === 'decision')     chip.classList.add('deal-pending');
-      const termsHtml = pg.senders.map(s => `<div class="deal-term-line">${esc(s.terms || '')}</div>`).join('');
-      const tokLine   = pg.totalTok > 0
-        ? `<div class="deal-tok-line">💰 ${pg.totalTok} tokens offered</div>` : '';
+      const termsHtml = pg.senders.map(s => {
+        const amt = s.token_amount || 0;
+        const amtBadge = amt > 0 ? ` <span class="tok-badge">${amt}t</span>` : '';
+        return `<div class="deal-term-line">${esc(s.terms || '')}${amtBadge}</div>`;
+      }).join('');
       let statusHtml = '';
       if (response === 'accepted')
         statusHtml = `<div class="deal-status deal-status-accepted">✓ ACCEPTED</div>`;
@@ -811,7 +815,6 @@ function buildDealPanel(history, legislators, currentTurn, proposalIdx, currentV
         </div>
         <div class="deal-names">${senderNames} → ${esc(shortName(d.to_display))}</div>
         <div class="deal-terms">${termsHtml}</div>
-        ${tokLine}
         ${statusHtml}`;
       pendingEl.appendChild(chip);
     }
@@ -842,7 +845,8 @@ function propDots(team, history, proposals, proposalIdx) {
     // Green check: first vote matched the winning side
     if (outcome && firstVote === outcome)
       return `<span class="prop-dot" title="Won">✅</span>`;
-    return `<span class="prop-dot" style="color:#d1d5db">·</span>`;
+    // Grey square: resolved but lost
+    return `<span class="prop-dot" title="Lost">⬜</span>`;
   }).join('');
 }
 
@@ -932,7 +936,7 @@ async function poll() {
     }
 
     updateSeats(legislators, votes, s.proposal_idx, turn, phase, token_balances, allTurns);
-    buildDealArcs(allTurns, turn, legislators);
+    buildDealArcs(allTurns, turn, legislators, phase);
     initSpotlight(legislators, s.proposal_idx, turn);
     renderSpotlight(legislators, votes, stmts, phase);
     buildDealPanel(history, legislators, turn, s.proposal_idx, votes, s.proposals, phase);
