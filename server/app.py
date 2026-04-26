@@ -18,7 +18,7 @@ CORS(app)
 
 PASSWORD = os.environ.get("REVEAL_PASSWORD", "busgen2026")
 
-SUBMIT_INTERVAL = 2.0  # seconds between accepted submissions
+SUBMIT_INTERVAL = 0.5  # seconds between accepted submissions
 _submit_lock    = threading.Lock()
 _last_submit_at = 0.0
 
@@ -218,7 +218,7 @@ def submit():
     statement = data.get("statement", "").strip()
     deal = data.get("deal")
 
-    if not team or vote not in ("YES", "NO", "ABSTAIN"):
+    if not team or vote not in ("YES", "NO"):
         return jsonify({"error": "Missing or invalid fields"}), 400
 
     p = current_proposal()

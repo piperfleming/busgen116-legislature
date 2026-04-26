@@ -67,6 +67,7 @@ Background: {description}
 
 TURN {turn} of {max_turns}{final_note}
 
+{tally_section}
 {history_section}
 {deals_section}
 {active_deals_section}
@@ -75,13 +76,14 @@ Your fellow legislators:
 {legislators_list}
 
 Instructions:
-- Vote YES or NO based on your voter's preferences and any coalition commitments you have accepted
+- You MUST vote YES or NO — abstaining is not permitted
+- Your PRIMARY goal is to WIN the current proposal for your side (pass it if your voter wants YES, defeat it if your voter wants NO)
+- Vote YES or NO based on your voter's preferences — BUT if you have ACCEPTED a deal, honor it and vote as agreed, even if it differs from your preference (the tokens are your compensation)
 - Give a short, sharp public statement (1-2 sentences) visible to the whole chamber
-- If you received deal offers (shown above), explicitly ACCEPT or REJECT each one by name
-- You may offer deals freely — but check "DEALS ALREADY IN PLAY" first:
-    * If a deal already targets the same legislator with the same direction (YES/NO), do NOT duplicate it
-    * Instead, if you want to reinforce it, offer tokens to the same target with the same direction
-    * If you disagree with the direction, you may offer a counter-deal to the same target
+- If you received deal offers (shown above), decide strategically: ACCEPT if the tokens are worth changing your vote, REJECT if not
+- Deals are how you change the outcome: if the tally shows your side is LOSING, you MUST offer tokens to legislators on the other side to flip their vote
+- If the tally shows your side is already WINNING comfortably, you may still offer deals to build a stronger coalition
+- Check "DEALS ALREADY IN PLAY" before offering: if the same target already has a pending deal in your direction, reinforce with tokens instead of duplicating
 - Deals may ONLY involve the CURRENT proposal — never offer deals on already-decided proposals
 - On the final turn, cast your binding vote — no new deals, no new responses needed
 
@@ -145,6 +147,28 @@ def format_deals_for_me(all_turns, my_team):
     return "DEAL OFFERS TO YOU:\n" + "\n".join(pending)
 
 
+def format_tally(history, proposal_id, current_turn, total_legislators):
+    """Show the previous turn's complete tally so agents know if the vote is close."""
+    if current_turn < 2:
+        return ""
+    turns = history.get(proposal_id, [])
+    if not turns:
+        return ""
+    td = turns[current_turn - 2] if (current_turn - 2) < len(turns) else {}
+    votes = td.get("votes", {})
+    yes = sum(1 for v in votes.values() if v == "YES")
+    no  = sum(1 for v in votes.values() if v == "NO")
+    needed = total_legislators // 2 + 1
+    gap = needed - yes
+    if yes > no:
+        status = f"YES leads by {yes - no}. YES needs {max(0, gap)} more vote(s) to pass."
+    elif no > yes:
+        status = f"NO leads by {no - yes}. YES needs {max(0, gap)} more vote(s) to pass."
+    else:
+        status = f"Tied. YES needs {max(0, gap)} more vote(s) to pass."
+    return f"LAST TURN TALLY (T{current_turn - 1}): YES {yes} — NO {no} — {status}"
+
+
 def format_active_deals(all_turns, my_team):
     """Deals from previous turns that are still unanswered — agents should not duplicate these."""
     active = []
@@ -177,6 +201,8 @@ def negotiate(team_name, display_name, gt, state):
     legislators = state.get("legislators", {})
     history     = state["history"].get(p["id"], [])
 
+    total_legislators     = len(legislators)
+    tally_section         = format_tally(state["history"], p["id"], turn, total_legislators)
     history_section       = format_history(history, team_name, legislators)
     deals_section         = format_deals_for_me(history, team_name)
     active_deals_section  = format_active_deals(history, team_name)
@@ -209,6 +235,7 @@ def negotiate(team_name, display_name, gt, state):
         turn              = turn,
         max_turns         = max_turns,
         final_note        = final_note,
+        tally_section         = tally_section,
         history_section       = history_section,
         deals_section         = deals_section,
         active_deals_section  = active_deals_section,
@@ -224,7 +251,7 @@ def negotiate(team_name, display_name, gt, state):
     )
     response = completion.choices[0].message.content.strip()
 
-    vote_val       = "ABSTAIN"
+    vote_val       = "YES" if gt.get(p["id"]) == "YES" else "NO"  # default to ground truth, never abstain
     statement      = ""
     deal           = None
     deal_responses = []
@@ -288,6 +315,7 @@ def run_agent(team_name, display_name, gt):
     last_proposal_idx = None
     last_phase       = None
     submitted_this_turn = False
+    pending_result   = None  # cached LLM result waiting to be submitted
 
     while True:
         try:
@@ -301,6 +329,7 @@ def run_agent(team_name, display_name, gt):
 
             if turn != last_turn or proposal_idx != last_proposal_idx:
                 submitted_this_turn   = False
+                pending_result        = None
                 last_turn             = turn
                 last_proposal_idx     = proposal_idx
 
@@ -309,20 +338,27 @@ def run_agent(team_name, display_name, gt):
                 break
 
             if phase == "voting" and not submitted_this_turn:
-                if phase != last_phase:
-                    log(team_name, f"computing vote (P{proposal_idx+1} T{turn})...")
                 try:
-                    result = negotiate(team_name, display_name, gt, state)
-                    requests.post(f"{SERVER_URL}/submit", json={
+                    # Compute LLM result only once per turn; retry only the HTTP submit on 429
+                    if pending_result is None:
+                        log(team_name, f"computing vote (P{proposal_idx+1} T{turn})...")
+                        pending_result = negotiate(team_name, display_name, gt, state)
+
+                    resp = requests.post(f"{SERVER_URL}/submit", json={
                         "team_name":      team_name,
-                        "vote":           result["vote"],
-                        "statement":      result["statement"],
-                        "deal":           result["deal"],
-                        "deal_responses": result.get("deal_responses", []),
-                    }, timeout=15).raise_for_status()
-                    submitted_this_turn = True
-                    deal_str = f" DEAL→{result['deal']['to_display'].split()[-1]}" if result.get("deal") else ""
-                    log(team_name, f"{result['vote']} — {result['statement'][:60]}{deal_str}")
+                        "vote":           pending_result["vote"],
+                        "statement":      pending_result["statement"],
+                        "deal":           pending_result["deal"],
+                        "deal_responses": pending_result.get("deal_responses", []),
+                    }, timeout=15)
+                    if resp.status_code == 429:
+                        retry_after = resp.json().get("retry_after", 1.0)
+                        time.sleep(retry_after + 0.2)
+                    else:
+                        resp.raise_for_status()
+                        submitted_this_turn = True
+                        deal_str = f" DEAL→{pending_result['deal']['to_display'].split()[-1]}" if pending_result.get("deal") else ""
+                        log(team_name, f"{pending_result['vote']} — {pending_result['statement'][:60]}{deal_str}")
                 except Exception as e:
                     log(team_name, f"ERROR: {e}")
 

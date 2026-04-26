@@ -162,8 +162,12 @@
      RIGHT COLUMN — deal threads
   ══════════════════════════════════════════ */
   #deals-panel {
-    display: flex; flex-direction: column;
+    display: flex; flex-direction: row;
     overflow: hidden; height: 100vh; background: #f4f1eb;
+  }
+  #deals-inner {
+    display: flex; flex-direction: column;
+    flex: 1; overflow: hidden;
   }
 
   #deals-header {
@@ -181,43 +185,40 @@
 
   /* ── Pending section ── */
   #pending-section {
-    flex-shrink: 0; background: #fff;
-    border-bottom: 2px solid #e5e7eb;
+    flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #fff;
   }
   #pending-label {
-    padding: 7px 14px 4px;
+    padding: 7px 14px 4px; flex-shrink: 0;
     font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
     color: #9ca3af; font-family: 'Segoe UI', system-ui, sans-serif;
   }
   #pending-chips {
-    padding: 6px 12px 10px;
-    display: flex; flex-wrap: wrap; gap: 7px;
-    min-height: 44px;
+    flex: 1; overflow-y: auto;
+    padding: 6px 12px 12px;
+    display: flex; flex-direction: column; gap: 8px;
   }
   .deal-chip {
-    display: flex; align-items: center; gap: 7px;
+    display: flex; flex-direction: column; gap: 5px;
     background: #f9fafb; border: 1px solid #e5e7eb;
-    border-radius: 20px; padding: 4px 10px 4px 4px;
+    border-radius: 8px; padding: 8px 12px;
     cursor: default;
   }
-  .pair-avatars {
-    position: relative; width: 36px; height: 22px; flex-shrink: 0;
+  .deal-chip-row {
+    display: flex; align-items: center; gap: 7px;
   }
   .pair-avatar {
     width: 22px; height: 22px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     font-size: 7px; font-weight: bold; font-family: 'Segoe UI', system-ui, sans-serif;
-    border: 2px solid #fff; position: absolute;
+    border: 2px solid #fff; flex-shrink: 0;
   }
-  .pair-avatar:first-child { left: 0; z-index: 2; }
-  .pair-avatar:last-child  { left: 13px; z-index: 1; }
   .av-yes { background: #d1fae5; color: #065f46; }
   .av-no  { background: #fee2e2; color: #991b1b; }
   .av-pending { background: #f3f4f6; color: #9ca3af; }
   .ask-badge {
     font-size: 9px; font-weight: bold; letter-spacing: 0.04em;
     padding: 2px 7px; border-radius: 10px;
-    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-family: 'Segoe UI', system-ui, sans-serif; flex-shrink: 0;
   }
   .ask-yes { background: #d1fae5; color: #065f46; }
   .ask-no  { background: #fee2e2; color: #991b1b; }
@@ -230,49 +231,50 @@
     background: #ede9fe; border-radius: 8px; padding: 1px 5px;
     font-family: 'Segoe UI', system-ui, sans-serif; flex-shrink: 0;
   }
+  .deal-terms {
+    font-size: 10px; color: #6b7280; font-style: italic;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    white-space: normal; line-height: 1.4;
+  }
 
-  /* ── Commitments section ── */
-  #commitments-section {
-    flex: 1; display: flex; flex-direction: column; overflow: hidden;
+  /* ══════════════════════════════════════════
+     TOKEN LEADERBOARD (far right)
+  ══════════════════════════════════════════ */
+  #token-panel {
+    display: flex; flex-direction: column;
+    overflow: hidden; background: #fff;
+    border-left: 1px solid #ddd8cc;
+    width: 200px; flex-shrink: 0;
   }
-  #commitments-label {
-    padding: 7px 14px 4px; flex-shrink: 0;
-    font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
-    color: #9ca3af; font-family: 'Segoe UI', system-ui, sans-serif;
+  #token-header {
+    padding: 8px 12px; flex-shrink: 0;
+    font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: #9ca3af; border-bottom: 1px solid #e5e7eb;
+    font-family: 'Segoe UI', system-ui, sans-serif; background: #fff;
   }
-  #commitments-list {
-    flex: 1; overflow-y: auto;
-    padding: 4px 12px 12px; display: flex; flex-direction: column; gap: 14px;
+  #token-list {
+    flex: 1; overflow-y: auto; padding: 6px 8px;
   }
-  .commit-group {
-    border-left: 3px solid #e5e7eb; padding-left: 10px;
+  .tok-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 3px 4px; border-radius: 5px; margin-bottom: 2px;
   }
-  .commit-group-label {
-    font-size: 9px; font-weight: bold; letter-spacing: 0.1em;
-    text-transform: uppercase; color: #9ca3af;
-    font-family: 'Segoe UI', system-ui, sans-serif; margin-bottom: 7px;
-  }
-  .commit-entry {
-    display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
-  }
-  .commit-names {
-    font-size: 11px; color: #374151;
+  .tok-row-name {
+    font-size: 10px; color: #374151; flex: 1;
     font-family: 'Segoe UI', system-ui, sans-serif;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .commit-turn {
-    font-size: 9px; color: #9ca3af; margin-left: auto; flex-shrink: 0;
+  .tok-row-val {
+    font-size: 10px; font-weight: bold; flex-shrink: 0;
     font-family: 'Segoe UI', system-ui, sans-serif;
   }
-  @keyframes commit-in {
-    from { opacity: 0; transform: translateY(-5px); }
-    to   { opacity: 1; transform: translateY(0); }
+  .tok-bar {
+    height: 3px; border-radius: 2px; background: #e5e7eb; flex-shrink: 0; width: 40px;
   }
-  .commit-new { animation: commit-in 0.35s ease forwards; }
-  .no-commits-msg {
-    color: #d1d5db; font-size: 11px; font-style: italic;
-    font-family: 'Segoe UI', system-ui, sans-serif; padding: 4px 2px;
+  .tok-bar-fill {
+    height: 100%; border-radius: 2px;
   }
+
 
   /* ══════════════════════════════════════════
      WAITING OVERLAY
@@ -354,16 +356,18 @@
   </div>
 </div>
 
-<!-- Right: pending + commitments -->
+<!-- Right column: deals + token leaderboard side by side -->
 <div id="deals-panel">
-  <div id="deals-header">Deals &amp; Coalitions<span id="deals-stats"></span></div>
-  <div id="pending-section">
-    <div id="pending-label">Pending this turn</div>
-    <div id="pending-chips"></div>
+  <div id="deals-inner">
+    <div id="deals-header">Deals &amp; Coalitions<span id="deals-stats"></span></div>
+    <div id="pending-section">
+      <div id="pending-label">Pending this turn</div>
+      <div id="pending-chips"></div>
+    </div>
   </div>
-  <div id="commitments-section">
-    <div id="commitments-label">Commitments</div>
-    <div id="commitments-list"></div>
+  <div id="token-panel">
+    <div id="token-header">Tokens</div>
+    <div id="token-list"></div>
   </div>
 </div>
 
@@ -590,10 +594,12 @@ function buildSeats(legislators, votes, tokenBalances = {}) {
 // ── Deal arcs in SVG ─────────────────────────────────────────────
 function dealAskColor(terms) {
   const t = (terms || '').toLowerCase();
-  // Look for what vote the offerer is asking the recipient to cast
-  if (/\byou\s+vote\s+yes\b|\bvote\s+yes\s+here\b/.test(t)) return 'yes';
-  if (/\byou\s+vote\s+no\b|\bvote\s+no\s+here\b/.test(t))  return 'no';
-  // Fallback: whichever appears last in the terms is likely the ask
+  // Specific patterns first
+  if (/\bvote\s+yes\b/.test(t)) return 'yes';
+  if (/\bvote\s+no\b/.test(t))  return 'no';
+  if (/\bsupport\b|\bpass\b/.test(t)) return 'yes';
+  if (/\boppose\b|\bblock\b|\bdefeat\b/.test(t)) return 'no';
+  // Fallback: whichever appears last
   const yi = t.lastIndexOf('yes'), ni = t.lastIndexOf('no');
   return yi > ni ? 'yes' : ni > yi ? 'no' : 'yes';
 }
@@ -693,7 +699,6 @@ const PROPOSAL_COLORS = ['#3b82f6', '#8b5cf6', '#059669'];
 function buildDealPanel(history, legislators, currentTurn, proposalIdx, currentVotes, proposals) {
   const statsEl      = document.getElementById('deals-stats');
   const pendingEl    = document.getElementById('pending-chips');
-  const commitsList  = document.getElementById('commitments-list');
 
   // ── Pending: deals offered THIS turn on the current proposal ──
   const pid       = proposals[proposalIdx]?.id;
@@ -706,89 +711,110 @@ function buildDealPanel(history, legislators, currentTurn, proposalIdx, currentV
   if (pending.length === 0) {
     pendingEl.innerHTML = '<span class="no-pending-msg">None yet.</span>';
   } else {
+    // Group by (to_team, ask direction) so coalitions show as one chip
+    const pGroups = new Map();
     for (const d of pending) {
-      const vA = prevVotes[d.from_team], vB = prevVotes[d.to_team];
-      const clA = vA === 'YES' ? 'av-yes' : vA === 'NO' ? 'av-no' : 'av-pending';
-      const clB = vB === 'YES' ? 'av-yes' : vB === 'NO' ? 'av-no' : 'av-pending';
       const ask = dealAskColor(d.terms);
+      const key = `${d.to_team}|${ask}`;
+      if (!pGroups.has(key)) pGroups.set(key, { to: d, ask, senders: [], totalTok: 0 });
+      const pg = pGroups.get(key);
+      pg.senders.push(d);
+      pg.totalTok += d.token_amount || 0;
+    }
+    for (const [, pg] of pGroups) {
+      const d = pg.to;
+      const vB = prevVotes[d.to_team];
+      const clB = vB === 'YES' ? 'av-yes' : vB === 'NO' ? 'av-no' : 'av-pending';
       const chip = document.createElement('div');
       chip.className = 'deal-chip';
-      chip.title = `${shortName(d.from_display)} → ${shortName(d.to_display)}: "${d.terms}"`;
-      const tokBadge = d.token_amount > 0 ? `<span class="tok-badge">${d.token_amount}t</span>` : '';
+      chip.title = pg.senders.map(s => `${shortName(s.from_display)}: "${s.terms}"`).join('\n');
+      const tokBadge = pg.totalTok > 0 ? `<span class="tok-badge">${pg.totalTok}t</span>` : '';
+      const senderAvatars = pg.senders.map(s => {
+        const vA = prevVotes[s.from_team];
+        const clA = vA === 'YES' ? 'av-yes' : vA === 'NO' ? 'av-no' : 'av-pending';
+        return `<div class="pair-avatar ${clA}">${initials(s.from_display)}</div>`;
+      }).join('');
+      const senderNames = pg.senders.map(s => esc(shortName(s.from_display))).join(' + ');
+      const allTerms = pg.senders.map(s => esc(s.terms || '')).join('<br>');
       chip.innerHTML = `
-        <div class="pair-avatars">
-          <div class="pair-avatar ${clA}">${initials(d.from_display)}</div>
+        <div class="deal-chip-row">
+          <div style="display:flex;align-items:center;gap:2px">${senderAvatars}</div>
+          <span style="font-size:10px;color:#9ca3af">→</span>
           <div class="pair-avatar ${clB}">${initials(d.to_display)}</div>
+          <span class="ask-badge ask-${pg.ask}">${pg.ask.toUpperCase()}</span>${tokBadge}
+          <span style="font-size:10px;color:#374151;font-family:'Segoe UI',system-ui;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${senderNames} → ${esc(shortName(d.to_display))}</span>
         </div>
-        <span class="ask-badge ask-${ask}">${ask.toUpperCase()}</span>${tokBadge}`;
+        <div class="deal-terms">${allTerms}</div>`;
       pendingEl.appendChild(chip);
     }
   }
 
-  // ── Commitments: accepted deals across all proposals so far ──
-  commitsList.innerHTML = '';
-  let totalCommits = 0;
+  statsEl.innerHTML = pending.length ? `<span class="sn">${pending.length}</span> active` : '';
+}
 
-  for (let pi = 0; pi <= proposalIdx; pi++) {
-    const prop = proposals[pi];
-    if (!prop) continue;
-    const pTurns = history[prop.id] || [];
-    const commits = [];
+// ── Token leaderboard ────────────────────────────────────────────
+let _resultsData = []; // cached from /results_data
 
-    pTurns.forEach((td, ti) => {
-      const cv = td.votes || {};
-      const nv = (pTurns[ti + 1]?.votes) || {};
-      for (const d of (td.deals || [])) {
-        let accepted = d.response === 'accepted';
-        if (!accepted) {
-          const vB = cv[d.to_team], vA = nv[d.to_team];
-          if (vB && vA && vB !== vA) accepted = true;
-        }
-        if (accepted) commits.push({ ...d, turn: ti + 1, cv });
-      }
-    });
+async function fetchResultsData() {
+  try {
+    const r = await fetch('/results_data');
+    _resultsData = await r.json();
+  } catch(e) {}
+}
 
-    if (!commits.length) continue;
-    totalCommits += commits.length;
+function buildTokenLeaderboard(legislators, tokenBalances, phase) {
+  const list   = document.getElementById('token-list');
+  const header = document.getElementById('token-header');
 
-    const group = document.createElement('div');
-    group.className = 'commit-group';
-    group.style.borderLeftColor = PROPOSAL_COLORS[pi] || '#9ca3af';
-    group.innerHTML = `<div class="commit-group-label">${esc(prop.company)}</div>`;
-
-    for (const d of commits) {
-      const key = `${d.from_team}|${d.to_team}|${d.turn}|${pi}`;
-      const isNew = !_seenCommitments.has(key);
-      if (isNew) _seenCommitments.add(key);
-      const ask = dealAskColor(d.terms);
-      const vA = d.cv[d.from_team], vB = d.cv[d.to_team];
-      const clA = vA === 'YES' ? 'av-yes' : vA === 'NO' ? 'av-no' : 'av-pending';
-      const clB = vB === 'YES' ? 'av-yes' : vB === 'NO' ? 'av-no' : 'av-pending';
-
-      const entry = document.createElement('div');
-      entry.className = `commit-entry${isNew ? ' commit-new' : ''}`;
-      entry.title = `"${d.terms}"`;
-      const cTokBadge = d.token_amount > 0 ? `<span class="tok-badge">${d.token_amount}t</span>` : '';
-      entry.innerHTML = `
-        <div class="pair-avatars">
-          <div class="pair-avatar ${clA}">${initials(d.from_display)}</div>
-          <div class="pair-avatar ${clB}">${initials(d.to_display)}</div>
-        </div>
-        <span class="ask-badge ask-${ask}">${ask.toUpperCase()}</span>${cTokBadge}
-        <span class="commit-names">${esc(shortName(d.from_display))} → ${esc(shortName(d.to_display))}</span>
-        <span class="commit-turn">T${d.turn}</span>`;
-      group.appendChild(entry);
-    }
-    commitsList.appendChild(group);
+  // Build alignment map from cached results_data
+  const alignMap = {}; // team → { aligned: [bool,...], score: 0-3, gained: bool }
+  for (const row of _resultsData) {
+    const props = row.proposals || {};
+    const dots  = ['X6','X8','X10'].map(pid => props[pid]?.aligned ?? null);
+    const score = dots.filter(Boolean).length;
+    alignMap[row.team] = { dots, score, gained: (tokenBalances[row.team] ?? 100) > 100 };
   }
 
-  if (!commitsList.children.length) {
-    commitsList.innerHTML = '<span class="no-commits-msg">None yet.</span>';
-  }
+  // In done phase, sort by misalignment (worst sellouts first)
+  const isDone = phase === 'done' || phase === 'results';
+  const rows = Object.entries(legislators)
+    .map(([team, display]) => ({
+      team, name: shortName(display),
+      bal: tokenBalances[team] ?? 100,
+      align: alignMap[team] || null,
+    }))
+    .sort((a, b) => isDone
+      ? (a.align?.score ?? 3) - (b.align?.score ?? 3) || b.bal - a.bal
+      : b.bal - a.bal
+    );
 
-  statsEl.innerHTML = totalCommits
-    ? `<span class="sn">${totalCommits}</span> committed`
-    : '';
+  header.textContent = isDone ? 'Alignment' : 'Tokens';
+  list.innerHTML = '';
+  const maxBal = Math.max(...rows.map(r => r.bal), 100);
+
+  rows.forEach(({ team, name, bal, align }) => {
+    const gained   = bal > 100;
+    const sellout  = gained && align && align.score < 3;
+    const balColor = bal >= 85 ? '#059669' : bal >= 55 ? '#d97706' : '#dc2626';
+    const pct      = Math.round((bal / maxBal) * 100);
+
+    const dotHtml = align
+      ? align.dots.map(d => d === null
+          ? `<span style="font-size:7px;color:#d1d5db">·</span>`
+          : `<span style="font-size:8px;color:${d ? '#059669' : '#dc2626'}">${d ? '✓' : '✗'}</span>`
+        ).join('')
+      : '';
+
+    const row = document.createElement('div');
+    row.className = 'tok-row';
+    if (sellout) row.style.background = '#fff7ed';
+    row.innerHTML = `
+      <span class="tok-row-name" style="${sellout ? 'color:#b45309;font-weight:600' : ''}">${esc(name)}${sellout ? ' 💸' : ''}</span>
+      <span style="display:flex;gap:1px;flex-shrink:0">${dotHtml}</span>
+      <div class="tok-bar"><div class="tok-bar-fill" style="width:${pct}%;background:${balColor}"></div></div>
+      <span class="tok-row-val" style="color:${balColor}">${bal}</span>`;
+    list.appendChild(row);
+  });
 }
 
 // ── Poll ─────────────────────────────────────────────────────────
@@ -851,6 +877,8 @@ async function poll() {
     initSpotlight(legislators, s.proposal_idx, turn);
     renderSpotlight(legislators, votes, stmts, phase);
     buildDealPanel(history, legislators, turn, s.proposal_idx, votes, s.proposals);
+    if (phase === 'results' || phase === 'done') fetchResultsData();
+    buildTokenLeaderboard(legislators, token_balances, phase);
 
   } catch(e) { console.error(e); }
   setTimeout(poll, POLL);
