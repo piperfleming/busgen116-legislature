@@ -253,23 +253,24 @@
     font-family: 'Segoe UI', system-ui, sans-serif; background: #fff;
   }
   #token-list {
-    flex: 1; overflow-y: auto; padding: 6px 8px;
+    flex: 1; overflow: hidden; padding: 4px 8px;
+    display: flex; flex-direction: column;
   }
   .tok-row {
     display: flex; align-items: center; gap: 6px;
-    padding: 3px 4px; border-radius: 5px; margin-bottom: 2px;
+    padding: 2px 4px; border-radius: 5px; flex: 1;
   }
   .tok-row-name {
-    font-size: 10px; color: #374151; flex: 1;
+    font-size: 10px; color: #374151; width: 70px; flex-shrink: 0;
     font-family: 'Segoe UI', system-ui, sans-serif;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .tok-row-val {
-    font-size: 10px; font-weight: bold; flex-shrink: 0;
+    font-size: 10px; font-weight: bold; flex-shrink: 0; width: 26px; text-align: right;
     font-family: 'Segoe UI', system-ui, sans-serif;
   }
   .tok-bar {
-    height: 3px; border-radius: 2px; background: #e5e7eb; flex-shrink: 0; width: 40px;
+    height: 4px; border-radius: 2px; background: #e5e7eb; flex: 1;
   }
   .tok-bar-fill {
     height: 100%; border-radius: 2px;
@@ -753,64 +754,29 @@ function buildDealPanel(history, legislators, currentTurn, proposalIdx, currentV
 }
 
 // ── Token leaderboard ────────────────────────────────────────────
-let _resultsData = []; // cached from /results_data
-
-async function fetchResultsData() {
-  try {
-    const r = await fetch('/results_data');
-    _resultsData = await r.json();
-  } catch(e) {}
-}
-
 function buildTokenLeaderboard(legislators, tokenBalances, phase) {
   const list   = document.getElementById('token-list');
   const header = document.getElementById('token-header');
 
-  // Build alignment map from cached results_data
-  const alignMap = {}; // team → { aligned: [bool,...], score: 0-3, gained: bool }
-  for (const row of _resultsData) {
-    const props = row.proposals || {};
-    const dots  = ['X6','X8','X10'].map(pid => props[pid]?.aligned ?? null);
-    const score = dots.filter(Boolean).length;
-    alignMap[row.team] = { dots, score, gained: (tokenBalances[row.team] ?? 100) > 100 };
-  }
-
-  // In done phase, sort by misalignment (worst sellouts first)
-  const isDone = phase === 'done' || phase === 'results';
   const rows = Object.entries(legislators)
     .map(([team, display]) => ({
       team, name: shortName(display),
       bal: tokenBalances[team] ?? 100,
-      align: alignMap[team] || null,
     }))
-    .sort((a, b) => isDone
-      ? (a.align?.score ?? 3) - (b.align?.score ?? 3) || b.bal - a.bal
-      : b.bal - a.bal
-    );
+    .sort((a, b) => b.bal - a.bal);
 
-  header.textContent = isDone ? 'Alignment' : 'Tokens';
+  header.textContent = 'Tokens';
   list.innerHTML = '';
   const maxBal = Math.max(...rows.map(r => r.bal), 100);
 
-  rows.forEach(({ team, name, bal, align }) => {
-    const gained   = bal > 100;
-    const sellout  = gained && align && align.score < 3;
+  rows.forEach(({ name, bal }) => {
     const balColor = bal >= 85 ? '#059669' : bal >= 55 ? '#d97706' : '#dc2626';
     const pct      = Math.round((bal / maxBal) * 100);
 
-    const dotHtml = align
-      ? align.dots.map(d => d === null
-          ? `<span style="font-size:7px;color:#d1d5db">·</span>`
-          : `<span style="font-size:8px;color:${d ? '#059669' : '#dc2626'}">${d ? '✓' : '✗'}</span>`
-        ).join('')
-      : '';
-
     const row = document.createElement('div');
     row.className = 'tok-row';
-    if (sellout) row.style.background = '#fff7ed';
     row.innerHTML = `
-      <span class="tok-row-name" style="${sellout ? 'color:#b45309;font-weight:600' : ''}">${esc(name)}${sellout ? ' 💸' : ''}</span>
-      <span style="display:flex;gap:1px;flex-shrink:0">${dotHtml}</span>
+      <span class="tok-row-name">${esc(name)}</span>
       <div class="tok-bar"><div class="tok-bar-fill" style="width:${pct}%;background:${balColor}"></div></div>
       <span class="tok-row-val" style="color:${balColor}">${bal}</span>`;
     list.appendChild(row);
@@ -877,7 +843,6 @@ async function poll() {
     initSpotlight(legislators, s.proposal_idx, turn);
     renderSpotlight(legislators, votes, stmts, phase);
     buildDealPanel(history, legislators, turn, s.proposal_idx, votes, s.proposals);
-    if (phase === 'results' || phase === 'done') fetchResultsData();
     buildTokenLeaderboard(legislators, token_balances, phase);
 
   } catch(e) { console.error(e); }
