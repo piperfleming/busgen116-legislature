@@ -299,7 +299,7 @@ def negotiate(team_name, display_name, gt, state):
     return {"vote": vote_val, "statement": statement, "deal": deal, "deal_responses": deal_responses}
 
 
-def compute_decision(team_name, gt, state):
+def compute_decision(team_name, display_name, gt, state):
     """Simple heuristic: accept big bribes or free money; reject cheap flips."""
     p = state.get("proposal")
     if not p:
@@ -311,7 +311,10 @@ def compute_decision(team_name, gt, state):
     decisions = []
     for td in history[:turn_idx + 1]:
         for d in td.get("deals", []):
-            if d.get("to_team") != team_name.lower() or d.get("response") is not None:
+            # Match by team key OR by display name (handles empty to_team from failed lookup)
+            team_match = (d.get("to_team") == team_name.lower() or
+                          d.get("to_display", "").strip().lower() == display_name.strip().lower())
+            if not team_match or d.get("response") is not None:
                 continue
             terms = (d.get("terms") or "").lower()
             asking_yes = any(w in terms for w in ("vote yes", "support", "pass"))
@@ -395,7 +398,7 @@ def run_agent(team_name, display_name, gt):
 
             if phase == "decision" and not decided_this_turn:
                 try:
-                    decisions = compute_decision(team_name, gt, state)
+                    decisions = compute_decision(team_name, display_name, gt, state)
                     requests.post(f"{SERVER_URL}/decide", json={
                         "team_name":      team_name,
                         "deal_responses": decisions,
