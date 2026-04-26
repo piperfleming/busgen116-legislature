@@ -771,7 +771,6 @@ function buildDealPanel(history, legislators, currentTurn, proposalIdx, currentV
         return `<div class="pair-avatar ${clA}">${initials(s.from_display)}</div>`;
       }).join('');
       const senderNames = pg.senders.map(s => esc(shortName(s.from_display))).join(' + ');
-      const allTerms = pg.senders.map(s => esc(s.terms || '')).join('<br>');
       const response = pg.senders.find(s => s.response)?.response || null;
       if (phase === 'decision') {
         chip.classList.add(response === 'accepted' ? 'deal-accepted' : response === 'rejected' ? 'deal-rejected' : 'deal-pending');
