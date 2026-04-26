@@ -51,11 +51,11 @@
     letter-spacing: 0.06em; text-transform: uppercase;
     font-family: 'Segoe UI', system-ui, sans-serif; white-space: nowrap;
   }
-  .pill-waiting { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.5); }
-  .pill-whisper { background: #f59e0b; color: #1a1a2e; }
-  .pill-voting  { background: #3b82f6; color: #fff; }
-  .pill-results { background: #10b981; color: #fff; }
-  .pill-done    { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.5); }
+  .pill-waiting  { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.5); }
+  .pill-voting   { background: #3b82f6; color: #fff; }
+  .pill-decision { background: #f59e0b; color: #1a1a2e; }
+  .pill-results  { background: #10b981; color: #fff; }
+  .pill-done     { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.5); }
 
   /* ── Question + spotlight panel ── */
   #question-panel {
@@ -418,11 +418,11 @@ const A_START = Math.PI * 0.96;
 const A_END   = Math.PI * 0.04;
 
 const phasePills = {
-  waiting: ['Waiting',          'pill-waiting'],
-  whisper: ['Whisper Open',     'pill-whisper'],
-  voting:  ['Voting',           'pill-voting'],
-  results: ['Results',          'pill-results'],
-  done:    ['Session Complete', 'pill-done'],
+  waiting:  ['Waiting',          'pill-waiting'],
+  voting:   ['Voting',           'pill-voting'],
+  decision: ['Deal Decision',    'pill-decision'],
+  results:  ['Results',          'pill-results'],
+  done:     ['Session Complete', 'pill-done'],
 };
 
 // ── Seat animation ───────────────────────────────────────────────
@@ -497,7 +497,7 @@ function renderSpotlight(legislators, votes, stmts, phase) {
   const panel = document.getElementById('question-panel');
   const spEl  = document.getElementById('spotlight');
 
-  if (phase !== 'voting' && phase !== 'results') {
+  if (phase !== 'voting' && phase !== 'results' && phase !== 'decision') {
     panel.classList.remove('spotlight-mode');
     return;
   }

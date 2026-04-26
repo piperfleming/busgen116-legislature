@@ -45,8 +45,8 @@
     text-transform: uppercase;
   }
   .phase-waiting  { background: #21262d; color: #8b949e; }
-  .phase-whisper  { background: #2d2a1e; color: #e3b341; border: 1px solid #e3b341; }
   .phase-voting   { background: #1f2d45; color: #58a6ff; border: 1px solid #58a6ff; }
+  .phase-decision { background: #2d2a1e; color: #e3b341; border: 1px solid #e3b341; }
   .phase-results  { background: #1e2d23; color: #3fb950; border: 1px solid #3fb950; }
   .phase-done     { background: #21262d; color: #8b949e; }
 
@@ -133,8 +133,8 @@
   <div class="card-title">Session Controls</div>
 
   <div class="btn-row">
-    <button class="btn-amber" onclick="act('start_whisper')">1. Open Whisper Window</button>
-    <button class="btn-blue"  onclick="act('start_voting')">2. Start Voting</button>
+    <button class="btn-blue"  onclick="act('start_voting')">1. Start Voting</button>
+    <button class="btn-amber" onclick="act('start_decision')">2. Decision Round</button>
     <button class="btn-green" onclick="act('show_results')">3. Show Results</button>
   </div>
 
@@ -158,11 +158,11 @@ const POLL = 2000;
 let lastState = null;
 
 const phaseLabels = {
-  waiting: 'Waiting',
-  whisper: 'Whisper Open',
-  voting: 'Voting',
-  results: 'Results',
-  done: 'Session Complete',
+  waiting:  'Waiting',
+  voting:   'Voting',
+  decision: 'Deal Decision',
+  results:  'Results',
+  done:     'Session Complete',
 };
 
 function pw() {
