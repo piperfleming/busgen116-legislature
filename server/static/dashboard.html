@@ -13,7 +13,7 @@
     font-family: 'Georgia', 'Times New Roman', serif;
     height: 100vh;
     display: grid;
-    grid-template-columns: 38fr 62fr;
+    grid-template-columns: 44fr 56fr;
     grid-template-rows: 1fr;
     overflow: hidden;
   }
@@ -253,8 +253,12 @@
   .deal-terms {
     font-size: 12px; color: #6b7280; font-style: italic;
     font-family: 'Segoe UI', system-ui, sans-serif;
-    display: -webkit-box; -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4;
+    line-height: 1.5;
+  }
+  .deal-term-line + .deal-term-line {
+    margin-top: 3px;
+    padding-top: 3px;
+    border-top: 1px solid #f3f4f6;
   }
   .deal-tok-line {
     font-size: 13px; font-weight: 700; color: #7c3aed;
@@ -285,12 +289,12 @@
     display: flex; gap: 3px; flex-shrink: 0; align-items: center;
   }
   .prop-dot {
-    font-size: 11px; line-height: 1;
+    font-size: 16px; line-height: 1;
   }
   #token-header {
-    padding: 8px 12px; flex-shrink: 0;
-    font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
-    color: #9ca3af; border-bottom: 1px solid #e5e7eb;
+    padding: 10px 16px; flex-shrink: 0;
+    font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: #6b7280; border-bottom: 1px solid #e5e7eb;
     font-family: 'Segoe UI', system-ui, sans-serif; background: #fff;
   }
   #token-list {
@@ -428,7 +432,7 @@ const phasePills = {
 // ── Seat animation ───────────────────────────────────────────────
 let _animKey = null, _animTimer = null, _animRevealed = {};
 
-function updateSeats(legislators, votes, proposalIdx, turn, phase, tokenBalances = {}) {
+function updateSeats(legislators, votes, proposalIdx, turn, phase, tokenBalances = {}, allTurns = []) {
   const key = `${proposalIdx}-${turn}`;
   if (phase !== 'results') {
     if (_animTimer) { clearTimeout(_animTimer); _animTimer = null; }
@@ -439,13 +443,24 @@ function updateSeats(legislators, votes, proposalIdx, turn, phase, tokenBalances
   if (_animKey === key) return;
   if (_animTimer) { clearTimeout(_animTimer); _animTimer = null; }
   _animKey = key; _animRevealed = {};
+
+  // Anyone who accepted a deal gets the ripple on reveal
+  const acceptors = new Set();
+  for (const td of allTurns) {
+    for (const d of (td.deals || [])) {
+      if (d.response === 'accepted') acceptors.add(d.to_team);
+    }
+  }
+
   const teams = Object.keys(votes).filter(t => votes[t]).sort(() => Math.random() - 0.5);
   buildSeats(legislators, {}, tokenBalances);
   let i = 0;
   const delay = Math.min(1800 / Math.max(teams.length, 1), 90);
   function step() {
     if (i >= teams.length) { _animTimer = null; return; }
-    _animRevealed[teams[i]] = votes[teams[i]]; i++;
+    const team = teams[i]; i++;
+    _animRevealed[team] = votes[team];
+    if (acceptors.has(team)) _flashExpires[team] = Date.now() + 8000;
     buildSeats(legislators, _animRevealed, tokenBalances);
     _animTimer = setTimeout(step, delay);
   }
@@ -640,37 +655,40 @@ function dealAskColor(terms) {
   return yi > ni ? 'yes' : ni > yi ? 'no' : 'yes';
 }
 
-function buildDealArcs(allTurns, currentTurn) {
+function buildDealArcs(allTurns, currentTurn, legislators = {}) {
   const g = document.getElementById('deal-arcs');
   g.innerHTML = '';
   const ns = 'http://www.w3.org/2000/svg';
 
+  // Fallback: find team key by display name when to_team is empty
+  function resolveTeam(team, display) {
+    if (team) return team;
+    const norm = (display || '').trim().toLowerCase();
+    for (const [k, v] of Object.entries(legislators)) {
+      if (v.trim().toLowerCase() === norm) return k;
+    }
+    return '';
+  }
+
   // One entry per directed pair (from→to)
   const pairs = new Map();
   allTurns.forEach((td, turnIdx) => {
-    const currVotes = td.votes || {};
-    const nextVotes = (allTurns[turnIdx + 1]?.votes) || {};
     for (const d of (td.deals || [])) {
-      const key = `${d.from_team}|${d.to_team}`;
+      const toTeam = resolveTeam(d.to_team, d.to_display);
+      const key = `${d.from_team}|${toTeam}`;
       if (!pairs.has(key)) pairs.set(key, {
-        from: d.from_team, to: d.to_team,
+        from: d.from_team, to: toTeam,
         ask: dealAskColor(d.terms),
         accepted: false,
-        dealTurn: turnIdx + 1,
       });
       const pair = pairs.get(key);
       if (d.response === 'accepted') pair.accepted = true;
-      // Infer from vote flip
-      const vB = currVotes[d.to_team], vA = nextVotes[d.to_team];
-      if (vB && vA && vB !== vA) pair.accepted = true;
     }
   });
 
   const SOLID_MS = 5000; // how long the solid line lingers after acceptance
 
   for (const [key, pair] of pairs) {
-    // Disappear if deal's turn has passed and it wasn't accepted
-    if (pair.dealTurn < currentTurn && !pair.accepted) continue;
 
     const posA = _seatPositions[pair.from];
     const posB = _seatPositions[pair.to];
@@ -772,18 +790,16 @@ function buildDealPanel(history, legislators, currentTurn, proposalIdx, currentV
       }).join('');
       const senderNames = pg.senders.map(s => esc(shortName(s.from_display))).join(' + ');
       const response = pg.senders.find(s => s.response)?.response || null;
-      if (phase === 'decision') {
-        chip.classList.add(response === 'accepted' ? 'deal-accepted' : response === 'rejected' ? 'deal-rejected' : 'deal-pending');
-      } else if (response) {
-        chip.classList.add(response === 'accepted' ? 'deal-accepted' : 'deal-rejected');
-      }
-      const allTerms = esc(pg.senders.map(s => s.terms || '').join(' / '));
-      const tokLine  = pg.totalTok > 0
+      if (response === 'accepted')       chip.classList.add('deal-accepted');
+      else if (response === 'rejected')  chip.classList.add('deal-rejected');
+      else if (phase === 'decision')     chip.classList.add('deal-pending');
+      const termsHtml = pg.senders.map(s => `<div class="deal-term-line">${esc(s.terms || '')}</div>`).join('');
+      const tokLine   = pg.totalTok > 0
         ? `<div class="deal-tok-line">💰 ${pg.totalTok} tokens offered</div>` : '';
       let statusHtml = '';
-      if (phase === 'decision' && response === 'accepted')
+      if (response === 'accepted')
         statusHtml = `<div class="deal-status deal-status-accepted">✓ ACCEPTED</div>`;
-      else if (phase === 'decision' && response)
+      else if (response)
         statusHtml = `<div class="deal-status deal-status-ignored">— IGNORED</div>`;
       chip.innerHTML = `
         <div class="deal-chip-row">
@@ -791,9 +807,10 @@ function buildDealPanel(history, legislators, currentTurn, proposalIdx, currentV
           <span style="font-size:11px;color:#9ca3af">→</span>
           <div class="pair-avatar ${clB}">${initials(d.to_display)}</div>
           <span class="ask-badge ask-${pg.ask}">${pg.ask.toUpperCase()}</span>
+          ${tokBadge}
         </div>
         <div class="deal-names">${senderNames} → ${esc(shortName(d.to_display))}</div>
-        <div class="deal-terms">${allTerms}</div>
+        <div class="deal-terms">${termsHtml}</div>
         ${tokLine}
         ${statusHtml}`;
       pendingEl.appendChild(chip);
@@ -807,15 +824,25 @@ function buildDealPanel(history, legislators, currentTurn, proposalIdx, currentV
 function propDots(team, history, proposals, proposalIdx) {
   return proposals.map((prop, i) => {
     const turns = history[prop.id] || [];
-    // Only reveal flip after the proposal is fully past
     const resolved = i < proposalIdx;
     if (!resolved || !turns.length) return `<span class="prop-dot" style="color:#d1d5db">·</span>`;
     const firstVote = turns[0]?.votes?.[team];
     const lastVote  = turns[turns.length - 1]?.votes?.[team];
-    if (!firstVote || !lastVote) return `<span class="prop-dot" style="color:#d1d5db">·</span>`;
-    return firstVote !== lastVote
-      ? `<span class="prop-dot" title="Changed position">💰</span>`
-      : `<span class="prop-dot" style="color:#d1d5db">·</span>`;
+    if (!firstVote) return `<span class="prop-dot" style="color:#d1d5db">·</span>`;
+
+    // Compute outcome from final turn vote tally
+    const finalVotes = Object.values(turns[turns.length - 1]?.votes || {});
+    let yes = 0, no = 0;
+    for (const v of finalVotes) { if (v === 'YES') yes++; else if (v === 'NO') no++; }
+    const outcome = yes > no ? 'YES' : no > yes ? 'NO' : null;
+
+    // Flip takes visual priority over win
+    if (lastVote && firstVote !== lastVote)
+      return `<span class="prop-dot" title="Changed position">💰</span>`;
+    // Green check: first vote matched the winning side
+    if (outcome && firstVote === outcome)
+      return `<span class="prop-dot" title="Won">✅</span>`;
+    return `<span class="prop-dot" style="color:#d1d5db">·</span>`;
   }).join('');
 }
 
@@ -904,8 +931,8 @@ async function poll() {
       }
     }
 
-    updateSeats(legislators, votes, s.proposal_idx, turn, phase, token_balances);
-    buildDealArcs(allTurns, turn);
+    updateSeats(legislators, votes, s.proposal_idx, turn, phase, token_balances, allTurns);
+    buildDealArcs(allTurns, turn, legislators);
     initSpotlight(legislators, s.proposal_idx, turn);
     renderSpotlight(legislators, votes, stmts, phase);
     buildDealPanel(history, legislators, turn, s.proposal_idx, votes, s.proposals, phase);
