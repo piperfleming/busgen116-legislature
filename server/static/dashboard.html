@@ -13,7 +13,7 @@
     font-family: 'Georgia', 'Times New Roman', serif;
     height: 100vh;
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 38fr 62fr;
     grid-template-rows: 1fr;
     overflow: hidden;
   }
@@ -171,9 +171,9 @@
   }
 
   #deals-header {
-    padding: 8px 16px;
-    font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
-    color: #9ca3af; border-bottom: 1px solid #e5e7eb; flex-shrink: 0;
+    padding: 10px 16px;
+    font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: #6b7280; border-bottom: 1px solid #e5e7eb; flex-shrink: 0;
     font-family: 'Segoe UI', system-ui, sans-serif; background: #fff;
     display: flex; align-items: center;
   }
@@ -245,11 +245,32 @@
     background: #ede9fe; border-radius: 8px; padding: 2px 6px;
     font-family: 'Segoe UI', system-ui, sans-serif; flex-shrink: 0;
   }
-  .deal-terms {
-    font-size: 12px; color: #6b7280; font-style: italic;
+  .deal-names {
+    font-size: 12px; font-weight: 600; color: #374151;
     font-family: 'Segoe UI', system-ui, sans-serif;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
+  .deal-terms {
+    font-size: 12px; color: #6b7280; font-style: italic;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4;
+  }
+  .deal-tok-line {
+    font-size: 13px; font-weight: 700; color: #7c3aed;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+  .deal-status {
+    font-size: 12px; font-weight: bold; text-align: center;
+    padding: 4px 10px; border-radius: 5px; letter-spacing: 0.06em;
+    animation: status-in 0.35s ease forwards;
+  }
+  @keyframes status-in {
+    from { opacity: 0; transform: scaleY(0.7); }
+    to   { opacity: 1; transform: scaleY(1); }
+  }
+  .deal-status-accepted { background: #22c55e; color: #fff; }
+  .deal-status-ignored  { background: #d1d5db; color: #6b7280; font-style: italic; }
 
   /* ══════════════════════════════════════════
      TOKEN LEADERBOARD (far right)
@@ -258,7 +279,13 @@
     display: flex; flex-direction: column;
     overflow: hidden; background: #fff;
     border-left: 1px solid #ddd8cc;
-    width: 200px; flex-shrink: 0;
+    width: 220px; flex-shrink: 0;
+  }
+  .prop-dots {
+    display: flex; gap: 3px; flex-shrink: 0; align-items: center;
+  }
+  .prop-dot {
+    font-size: 11px; line-height: 1;
   }
   #token-header {
     padding: 8px 12px; flex-shrink: 0;
@@ -751,15 +778,25 @@ function buildDealPanel(history, legislators, currentTurn, proposalIdx, currentV
       } else if (response) {
         chip.classList.add(response === 'accepted' ? 'deal-accepted' : 'deal-rejected');
       }
-      const firstTerms = esc(pg.senders[0]?.terms || '');
+      const allTerms = esc(pg.senders.map(s => s.terms || '').join(' / '));
+      const tokLine  = pg.totalTok > 0
+        ? `<div class="deal-tok-line">💰 ${pg.totalTok} tokens offered</div>` : '';
+      let statusHtml = '';
+      if (phase === 'decision' && response === 'accepted')
+        statusHtml = `<div class="deal-status deal-status-accepted">✓ ACCEPTED</div>`;
+      else if (phase === 'decision' && response)
+        statusHtml = `<div class="deal-status deal-status-ignored">— IGNORED</div>`;
       chip.innerHTML = `
         <div class="deal-chip-row">
           <div style="display:flex;align-items:center;gap:2px">${senderAvatars}</div>
           <span style="font-size:11px;color:#9ca3af">→</span>
           <div class="pair-avatar ${clB}">${initials(d.to_display)}</div>
-          <span class="ask-badge ask-${pg.ask}">${pg.ask.toUpperCase()}</span>${tokBadge}
+          <span class="ask-badge ask-${pg.ask}">${pg.ask.toUpperCase()}</span>
         </div>
-        <div class="deal-terms">${firstTerms}</div>`;
+        <div class="deal-names">${senderNames} → ${esc(shortName(d.to_display))}</div>
+        <div class="deal-terms">${allTerms}</div>
+        ${tokLine}
+        ${statusHtml}`;
       pendingEl.appendChild(chip);
     }
   }
@@ -768,7 +805,22 @@ function buildDealPanel(history, legislators, currentTurn, proposalIdx, currentV
 }
 
 // ── Token leaderboard ────────────────────────────────────────────
-function buildTokenLeaderboard(legislators, tokenBalances, phase) {
+function propDots(team, history, proposals, proposalIdx) {
+  return proposals.map((prop, i) => {
+    const turns = history[prop.id] || [];
+    // Only reveal flip after the proposal is fully past
+    const resolved = i < proposalIdx;
+    if (!resolved || !turns.length) return `<span class="prop-dot" style="color:#d1d5db">·</span>`;
+    const firstVote = turns[0]?.votes?.[team];
+    const lastVote  = turns[turns.length - 1]?.votes?.[team];
+    if (!firstVote || !lastVote) return `<span class="prop-dot" style="color:#d1d5db">·</span>`;
+    return firstVote !== lastVote
+      ? `<span class="prop-dot" title="Changed position">💰</span>`
+      : `<span class="prop-dot" style="color:#d1d5db">·</span>`;
+  }).join('');
+}
+
+function buildTokenLeaderboard(legislators, tokenBalances, phase, history, proposalIdx, proposals) {
   const list   = document.getElementById('token-list');
   const header = document.getElementById('token-header');
 
@@ -782,13 +834,15 @@ function buildTokenLeaderboard(legislators, tokenBalances, phase) {
   header.textContent = 'Tokens';
   list.innerHTML = '';
 
-  rows.forEach(({ name, bal }) => {
+  rows.forEach(({ team, name, bal }) => {
     const balColor = bal >= 85 ? '#059669' : bal >= 55 ? '#d97706' : '#dc2626';
+    const dots = propDots(team, history || {}, proposals || [], proposalIdx ?? 0);
 
     const row = document.createElement('div');
     row.className = 'tok-row';
     row.innerHTML = `
       <span class="tok-row-name">${esc(name)}</span>
+      <span class="prop-dots">${dots}</span>
       <span class="tok-row-val" style="color:${balColor}">${bal}</span>`;
     list.appendChild(row);
   });
@@ -856,7 +910,7 @@ async function poll() {
     buildDealPanel(history, legislators, turn, s.proposal_idx, votes, s.proposals, phase);
     document.getElementById('deals-header').style.background =
       phase === 'decision' ? '#fef9c3' : '';
-    buildTokenLeaderboard(legislators, token_balances, phase);
+    buildTokenLeaderboard(legislators, token_balances, phase, history, s.proposal_idx, s.proposals);
 
   } catch(e) { console.error(e); }
   setTimeout(poll, POLL);
