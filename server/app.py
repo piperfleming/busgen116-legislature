@@ -290,8 +290,8 @@ def advance():
 
     action = data.get("action", "")
 
-    if action == "start_whisper":
-        state["phase"] = "whisper"
+    def _open_voting():
+        state["phase"] = "voting"
         state["current_submissions"] = []
         p = current_proposal()
         if p:
@@ -300,29 +300,24 @@ def advance():
             while len(turns) <= turn_idx:
                 turns.append({"votes": {}, "statements": {}, "deals": []})
 
-    elif action == "start_voting":
-        state["phase"] = "voting"
+    if action in ("start_voting", "start_whisper"):  # start_whisper kept as alias
+        _open_voting()
 
     elif action == "show_results":
         state["phase"] = "results"
 
+    elif action == "start_decision":
+        state["phase"] = "decision"
+
     elif action == "next_turn":
         if state["turn"] < MAX_TURNS:
             state["turn"] += 1
-            state["phase"] = "whisper"
-            state["current_submissions"] = []
-            p = current_proposal()
-            if p:
-                turns = state["history"].setdefault(p["id"], [])
-                turn_idx = state["turn"] - 1
-                while len(turns) <= turn_idx:
-                    turns.append({"votes": {}, "statements": {}, "deals": []})
+            _open_voting()
         else:
             if state["proposal_idx"] < len(PROPOSALS) - 1:
                 state["proposal_idx"] += 1
                 state["turn"] = 1
-                state["phase"] = "whisper"
-                state["current_submissions"] = []
+                _open_voting()
             else:
                 state["phase"] = "done"
 
@@ -330,8 +325,7 @@ def advance():
         if state["proposal_idx"] < len(PROPOSALS) - 1:
             state["proposal_idx"] += 1
             state["turn"] = 1
-            state["phase"] = "whisper"
-            state["current_submissions"] = []
+            _open_voting()
         else:
             state["phase"] = "done"
 
@@ -352,6 +346,43 @@ def advance():
         "turn": state["turn"],
         "proposal_idx": state["proposal_idx"],
     })
+
+
+@app.route("/decide", methods=["POST"])
+def decide():
+    data = request.get_json(silent=True) or {}
+    team = data.get("team_name", "").strip().lower()
+    if not team:
+        return jsonify({"error": "team_name required"}), 400
+
+    p = current_proposal()
+    if not p:
+        return jsonify({"error": "No active proposal"}), 400
+
+    pid = p["id"]
+    turns = state["history"].get(pid, [])
+    turn_idx = state["turn"] - 1
+
+    for resp in (data.get("deal_responses") or []):
+        from_disp = (resp.get("from_display") or "").strip().lower()
+        resp_val  = (resp.get("response") or "").strip().lower()
+        if resp_val not in ("accepted", "rejected"):
+            continue
+        for td in turns[:turn_idx + 1]:
+            for d in td.get("deals", []):
+                if (d.get("to_team") == team and
+                        d.get("from_display", "").strip().lower() == from_disp and
+                        d.get("response") is None):
+                    d["response"] = resp_val
+                    d["responded_turn"] = state["turn"]
+                    if resp_val == "accepted" and d.get("token_amount", 0) > 0:
+                        balances = state.setdefault("token_balances", {})
+                        amount = d["token_amount"]
+                        balances[d["from_team"]] = max(0, balances.get(d["from_team"], 0) - amount)
+                        balances[team] = balances.get(team, 0) + amount
+
+    save_state(state)
+    return jsonify({"ok": True})
 
 
 @app.route("/results_data")

@@ -14,7 +14,6 @@ import json
 import os
 import sys
 import time
-import threading
 import requests
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -207,20 +206,6 @@ def negotiate(state: dict, whisper: str = "") -> dict:
     return {"vote": vote_val, "statement": statement, "deal": deal}
 
 
-# ── Whisper input (non-blocking) ───────────────────────────────────────────────
-
-_whisper_buf   = ""
-_whisper_event = threading.Event()
-
-def _read_stdin():
-    global _whisper_buf
-    try:
-        _whisper_buf = sys.stdin.readline().rstrip("\n")
-    except Exception:
-        _whisper_buf = ""
-    _whisper_event.set()
-
-
 # ── Server helpers ─────────────────────────────────────────────────────────────
 
 def fetch_state() -> dict:
@@ -299,12 +284,10 @@ def main():
         print(f"  ERROR: Could not reach server: {e}")
         sys.exit(1)
 
-    last_phase       = None
-    last_turn        = None
-    last_proposal_idx = None
-    whisper_captured  = ""
+    last_phase          = None
+    last_turn           = None
+    last_proposal_idx   = None
     submitted_this_turn = False
-    whisper_thread_started = False
 
     print("  Waiting for session to start... (Ctrl+C to exit)")
 
@@ -318,17 +301,14 @@ def main():
 
             # Reset on turn / proposal change
             if turn != last_turn or proposal_idx != last_proposal_idx:
-                submitted_this_turn    = False
-                whisper_captured       = ""
-                whisper_thread_started = False
-                _whisper_event.clear()
-                last_turn        = turn
-                last_proposal_idx = proposal_idx
+                submitted_this_turn = False
+                last_turn           = turn
+                last_proposal_idx   = proposal_idx
 
             if phase != last_phase:
                 last_phase = phase
 
-                if phase == "whisper":
+                if phase == "voting":
                     section(
                         f"PROPOSAL {proposal_idx + 1}/3 — Turn {turn}/{state['max_turns']}  "
                         f"{'(FINAL VOTE)' if turn == state['max_turns'] else ''}"
@@ -336,32 +316,11 @@ def main():
                     if proposal:
                         print(f"  {proposal['company']}: {proposal['title']}")
                         print(f"  \"{proposal['question']}\"")
-                    print()
-                    print("  WHISPER WINDOW OPEN")
-                    print("  Type a message to your agent, then press Enter.")
-                    print("  Or just wait — the window closes when voting starts.")
-                    divider()
-                    sys.stdout.write("  Your whisper: ")
-                    sys.stdout.flush()
-                    _whisper_buf   = ""
-                    _whisper_event.clear()
-                    whisper_thread_started = True
-                    threading.Thread(target=_read_stdin, daemon=True).start()
-
-                elif phase == "voting":
-                    # Collect whisper (whatever was typed, or empty)
-                    if whisper_thread_started:
-                        whisper_captured = _whisper_buf.strip()
-                        if whisper_captured:
-                            print(f"\n  Whisper: \"{whisper_captured}\"")
-                        else:
-                            print("\n  (no whisper)")
-                    whisper_thread_started = False
 
                     if not submitted_this_turn:
                         print("  Computing vote...", flush=True)
                         try:
-                            result = negotiate(state, whisper_captured)
+                            result = negotiate(state, "")
                             sub    = post_submit(result["vote"], result["statement"], result["deal"])
                             submitted_this_turn = True
 
@@ -407,7 +366,7 @@ def main():
             elif phase == "voting" and not submitted_this_turn:
                 print("  Computing vote (late)...", flush=True)
                 try:
-                    result = negotiate(state, whisper_captured)
+                    result = negotiate(state, "")
                     post_submit(result["vote"], result["statement"], result["deal"])
                     submitted_this_turn = True
                     print(f"  VOTED: {result['vote']}  — {result['statement']}")

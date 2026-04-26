@@ -299,6 +299,35 @@ def negotiate(team_name, display_name, gt, state):
     return {"vote": vote_val, "statement": statement, "deal": deal, "deal_responses": deal_responses}
 
 
+def compute_decision(team_name, gt, state):
+    """Simple heuristic: accept big bribes or free money; reject cheap flips."""
+    p = state.get("proposal")
+    if not p:
+        return []
+    pid = p["id"]
+    my_pref = gt.get(pid, "NO")
+    history = state["history"].get(pid, [])
+    turn_idx = state["turn"] - 1
+    decisions = []
+    for td in history[:turn_idx + 1]:
+        for d in td.get("deals", []):
+            if d.get("to_team") != team_name.lower() or d.get("response") is not None:
+                continue
+            terms = (d.get("terms") or "").lower()
+            asking_yes = any(w in terms for w in ("vote yes", "support", "pass"))
+            asking_no  = any(w in terms for w in ("vote no", "oppose", "block", "defeat"))
+            if not asking_yes and not asking_no:
+                asking_yes = "yes" in terms
+            would_flip = (asking_yes and my_pref == "NO") or (not asking_yes and my_pref == "YES")
+            tokens = d.get("token_amount", 0)
+            if tokens >= 20 or (tokens >= 10 and not would_flip):
+                resp = "accepted"
+            else:
+                resp = "rejected"
+            decisions.append({"from_display": d["from_display"], "response": resp})
+    return decisions
+
+
 def run_agent(team_name, display_name, gt):
     try:
         r = requests.post(f"{SERVER_URL}/register",
@@ -315,6 +344,7 @@ def run_agent(team_name, display_name, gt):
     last_proposal_idx = None
     last_phase       = None
     submitted_this_turn = False
+    decided_this_turn   = False
     pending_result   = None  # cached LLM result waiting to be submitted
 
     while True:
@@ -329,6 +359,7 @@ def run_agent(team_name, display_name, gt):
 
             if turn != last_turn or proposal_idx != last_proposal_idx:
                 submitted_this_turn   = False
+                decided_this_turn     = False
                 pending_result        = None
                 last_turn             = turn
                 last_proposal_idx     = proposal_idx
@@ -361,6 +392,20 @@ def run_agent(team_name, display_name, gt):
                         log(team_name, f"{pending_result['vote']} — {pending_result['statement'][:60]}{deal_str}")
                 except Exception as e:
                     log(team_name, f"ERROR: {e}")
+
+            if phase == "decision" and not decided_this_turn:
+                try:
+                    decisions = compute_decision(team_name, gt, state)
+                    requests.post(f"{SERVER_URL}/decide", json={
+                        "team_name":      team_name,
+                        "deal_responses": decisions,
+                    }, timeout=10).raise_for_status()
+                    decided_this_turn = True
+                    if decisions:
+                        log(team_name, f"decided {len(decisions)} deal(s): " +
+                            ", ".join(f"{d['from_display'].split()[0]}→{d['response']}" for d in decisions))
+                except Exception as e:
+                    log(team_name, f"ERROR deciding: {e}")
 
             last_phase = phase
 
