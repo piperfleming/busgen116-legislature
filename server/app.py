@@ -136,9 +136,14 @@ def public_state():
     }
 
 
+def _nocache(resp):
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
+    return resp
+
 @app.route("/state")
 def get_state():
-    return jsonify(public_state())
+    return _nocache(jsonify(public_state()))
 
 
 @app.route("/personal/<path:team_name>")
@@ -172,7 +177,7 @@ def get_personal(team_name):
             my_vote = turns[turn_idx]["votes"].get(team)
             my_statement = turns[turn_idx]["statements"].get(team)
 
-    return jsonify({
+    return _nocache(jsonify({
         "phase": state["phase"],
         "turn": state["turn"],
         "proposal": p,
@@ -182,7 +187,7 @@ def get_personal(team_name):
         "my_vote": my_vote,
         "my_statement": my_statement,
         "submitted": team in state.get("current_submissions", []),
-    })
+    }))
 
 
 @app.route("/register", methods=["POST"])
@@ -402,7 +407,7 @@ def results_data():
                 "aligned": (final_vote == human_vote) if final_vote and human_vote else None,
             }
         rows.append(row)
-    return jsonify(rows)
+    return _nocache(jsonify(rows))
 
 
 @app.route("/health")
